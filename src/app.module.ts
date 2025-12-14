@@ -1,6 +1,11 @@
 import { Request } from 'express';
 import { APP_GUARD } from '@nestjs/core';
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { DatabaseModule } from './core/database/database.module.js';
@@ -10,6 +15,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { HealthModule } from './modules/health/health.module.js';
 import { RedisModule } from './core/redis/redis.module.js';
 import { RedisService } from './core/redis/redis.service.js';
+import { logger } from './middlewares/logger.middleware.js';
 
 @Module({
   imports: [
@@ -43,4 +49,11 @@ import { RedisService } from './core/redis/redis.service.js';
   controllers: [],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(logger)
+      .exclude({ path: 'health', method: RequestMethod.ALL })
+      .forRoutes('*');
+  }
+}
