@@ -32,7 +32,7 @@ export class OrganizationsController {
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_, file, cb) => {
         if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
           return cb(
             new BadRequestException('Only img, png and jpeg files are allowed'),
@@ -77,7 +77,7 @@ export class OrganizationsController {
   @Patch(':id')
   @UseInterceptors(
     FileInterceptor('file', {
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_, file, cb) => {
         if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
           return cb(
             new BadRequestException('Only img, png and jpeg files are allowed'),
@@ -124,7 +124,7 @@ export class OrganizationsController {
   @Post(':id/users')
   @UseInterceptors(
     FileInterceptor('file', {
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_, file, cb) => {
         if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
           return cb(
             new BadRequestException('Only img, png and jpeg files are allowed'),
@@ -202,7 +202,7 @@ export class OrganizationsController {
   @Patch(':id/users/:userId')
   @UseInterceptors(
     FileInterceptor('file', {
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_, file, cb) => {
         if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
           return cb(
             new BadRequestException('Only img, png and jpeg files are allowed'),
@@ -280,7 +280,7 @@ export class OrganizationsController {
   @Post(':id/projects')
   @UseInterceptors(
     FileInterceptor('file', {
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_, file, cb) => {
         if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
           return cb(
             new BadRequestException('Only img, png and jpeg files are allowed'),
@@ -313,7 +313,7 @@ export class OrganizationsController {
   @Get(':id/projects/:projectId')
   @UseInterceptors(
     FileInterceptor('file', {
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_, file, cb) => {
         if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
           return cb(
             new BadRequestException('Only img, png and jpeg files are allowed'),
@@ -347,7 +347,7 @@ export class OrganizationsController {
   @Patch(':id/projects/:projectId')
   @UseInterceptors(
     FileInterceptor('file', {
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_, file, cb) => {
         if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
           return cb(
             new BadRequestException('Only img, png and jpeg files are allowed'),
