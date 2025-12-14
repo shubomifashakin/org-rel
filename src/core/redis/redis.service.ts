@@ -2,10 +2,15 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import env from '../serverEnv/index.js';
 import { REDIS_7_DAYS } from '../../common/utils/constants.js';
+import { ThrottlerStorage } from '@nestjs/throttler';
+import { ThrottlerStorageRecord } from '@nestjs/throttler/dist/throttler-storage-record.interface.js';
 
 @Injectable()
-export class RedisService implements OnModuleInit, OnModuleDestroy {
+export class RedisService
+  implements ThrottlerStorage, OnModuleInit, OnModuleDestroy
+{
   private client: RedisClientType;
+  private isConnected = false;
 
   constructor() {
     this.client = createClient({
@@ -14,14 +19,46 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  async increment(
+    key: string,
+    ttl: number,
+    limit: number,
+    blockDuration: number,
+  ): Promise<ThrottlerStorageRecord> {
+    const currentCount = await this.client.incr(key);
+
+    const resetTime = Date.now() + ttl * 1000;
+
+    await this.client.expire(key, ttl);
+
+    const obj = {
+      totalHits: currentCount,
+      isBlocked: currentCount >= limit,
+      timeToExpire: resetTime,
+      timeToBlockExpire: resetTime + blockDuration * 1000,
+    };
+
+    return obj;
+  }
+
   async onModuleInit() {
-    await this.client.connect();
+    if (!this.isConnected) {
+      await this.client.connect();
+      this.isConnected = true;
+
+      this.client.on('error', (err) => {
+        //FIXME: Implement proper error handling
+        console.error('Redis connection error:', err);
+      });
+    }
   }
 
   async onModuleDestroy() {
     //FIXME: USE BETTER LOGGING LIB
     console.log('closing redis connection');
+
     await this.client.quit();
+    this.isConnected = false;
   }
 
   async setInCache(key: string, data: any, exp?: number) {
