@@ -12,6 +12,7 @@ import {
   BadRequestException,
   Query,
   ParseUUIDPipe,
+  HttpCode,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -30,6 +31,7 @@ export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
   @Post()
+  @HttpCode(200)
   @UseInterceptors(
     FileInterceptor('file', {
       fileFilter: (_, file, cb) => {
