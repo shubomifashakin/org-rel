@@ -1,10 +1,10 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import env from '../serverEnv/index.js';
 import { REDIS_7_DAYS } from '../../common/utils/constants.js';
 
 @Injectable()
-export class RedisService implements OnModuleInit {
+export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: RedisClientType;
 
   constructor() {
@@ -19,6 +19,8 @@ export class RedisService implements OnModuleInit {
   }
 
   async onModuleDestroy() {
+    //FIXME: USE BETTER LOGGING LIB
+    console.log('closing redis connection');
     await this.client.quit();
   }
 

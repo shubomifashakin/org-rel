@@ -8,6 +8,7 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api/v1');
+  app.enableShutdownHooks(['SIGINT', 'SIGTERM']);
   await app.listen(env.PORT);
 }
 bootstrap();

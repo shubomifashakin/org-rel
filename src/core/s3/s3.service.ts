@@ -1,10 +1,10 @@
 import { S3Client } from '@aws-sdk/client-s3';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
 import env from '../serverEnv/index.js';
 
 @Injectable()
-export class S3Service extends S3Client implements OnModuleInit {
+export class S3Service extends S3Client implements OnModuleDestroy {
   constructor() {
     super({
       region: env.AWS_REGION,
@@ -14,9 +14,10 @@ export class S3Service extends S3Client implements OnModuleInit {
       },
     });
   }
-  async onModuleInit(): Promise<void> {}
 
   onModuleDestroy() {
+    //FIXME: USE
+    console.log('S3Service is being destroyed');
     this.destroy();
   }
 }
