@@ -1,11 +1,12 @@
 import { APP_GUARD } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 import { seconds, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
-import { OrganizationsModule } from './organizations/organizations.module.js';
-import { DatabaseModule } from './database/database.module.js';
-import { S3Module } from './s3/s3.module.js';
+
+import { DatabaseModule } from './core/database/database.module.js';
+import { S3Module } from './core/s3/s3.module.js';
+
+import { OrganizationsModule } from './modules/organizations/organizations.module.js';
+import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
   imports: [
@@ -22,8 +23,9 @@ import { S3Module } from './s3/s3.module.js';
       errorMessage: 'Too many requests',
     }),
     S3Module,
+    HealthModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  controllers: [],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

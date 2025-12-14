@@ -1,5 +1,5 @@
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
-import { Users } from '../../../generated/prisma/client.js';
+import { Users } from '../../../../generated/prisma/client.js';
 
 export class CreateUserDto implements Pick<
   Users,

@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsString } from 'class-validator';
-import { OrganizationsCreateInput } from 'generated/prisma/models.js';
+import { OrganizationsCreateInput } from '../../../../generated/prisma/models.js';
 
 export class CreateOrganizationDto implements OrganizationsCreateInput {
   @IsNotEmpty({ message: 'Name is required' })

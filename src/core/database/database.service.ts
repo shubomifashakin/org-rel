@@ -1,14 +1,15 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../../generated/prisma/client.js';
+import { PrismaClient } from '../../../generated/prisma/client.js';
+import env from '../serverEnv/index.js';
 
 @Injectable()
 export class DatabaseService extends PrismaClient implements OnModuleInit {
   constructor() {
     super({
       transactionOptions: { maxWait: 10000, timeout: 10000 },
-      adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+      adapter: new PrismaPg({ connectionString: env.DATABASE_URL }),
     });
   }
 

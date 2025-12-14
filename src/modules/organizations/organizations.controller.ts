@@ -18,7 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { OrganizationsService } from './organizations.service.js';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
-import { Organizations, Users } from '../../generated/prisma/client.js';
+import { Organizations, Users } from '../../../generated/prisma/client.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { seconds, Throttle } from '@nestjs/throttler';

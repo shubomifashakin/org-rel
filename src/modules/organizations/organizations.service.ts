@@ -4,10 +4,10 @@ import { v4 as uuid } from 'uuid';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
-import { DatabaseService } from '../database/database.service.js';
+import { DatabaseService } from '../../core/database/database.service.js';
 // import { Organizations, Users } from '../../generated/prisma/client.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
-import { S3Service } from '../s3/s3.service.js';
+import { S3Service } from '../../core/s3/s3.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/updateProject.dto.js';
