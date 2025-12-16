@@ -54,11 +54,13 @@ export class RedisService
   }
 
   async onModuleDestroy() {
-    //FIXME: USE BETTER LOGGING LIB
-    console.log('closing redis connection');
+    if (!this.isConnected) {
+      //FIXME: USE BETTER LOGGING LIB
+      console.log('closing redis connection');
 
-    await this.client.quit();
-    this.isConnected = false;
+      await this.client.quit();
+      this.isConnected = false;
+    }
   }
 
   async setInCache(key: string, data: any, exp?: number) {
