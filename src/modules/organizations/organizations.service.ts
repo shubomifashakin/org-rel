@@ -167,7 +167,7 @@ export class OrganizationsService {
     return organization;
   }
 
-  async updateOrganization(
+  async updateOneOrganization(
     id: string,
     updateOrganizationDto: UpdateOrganizationDto,
     image?: Express.Multer.File,

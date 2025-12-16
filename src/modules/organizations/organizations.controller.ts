@@ -28,7 +28,8 @@ import { UpdateUserDto } from './dto/update-user.dto.js';
 import { seconds, Throttle } from '@nestjs/throttler';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/updateProject.dto.js';
-import { ValidateUUID } from './common/decorators/organizations-id-validator.decorator.js';
+import { ValidateUUID } from './common/decorators/uuid-validator.decorator.js';
+import { GetImage } from './common/decorators/get-file.decorator.js';
 
 @Controller('organizations')
 export class OrganizationsController {
@@ -84,28 +85,16 @@ export class OrganizationsController {
   }
 
   @Patch(':id') //update an org
-  @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (_, file, cb) => {
-        if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
-          return cb(
-            new BadRequestException('Only img, png and jpeg files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
-  updateOrganization(
+  @GetImage()
+  updateOneOrganization(
     @ValidateUUID('id', 'Invalid organization id') id: string,
     @Body() updateOrganizationDto: UpdateOrganizationDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
-    return this.organizationsService.updateOrganization(
+    return this.organizationsService.updateOneOrganization(
       id,
       updateOrganizationDto,
-      file,
+      image,
     );
   }
 
