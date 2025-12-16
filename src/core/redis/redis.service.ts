@@ -54,7 +54,7 @@ export class RedisService
   }
 
   async onModuleDestroy() {
-    if (!this.isConnected) {
+    if (this.isConnected) {
       //FIXME: USE BETTER LOGGING LIB
       console.log('closing redis connection');
 
