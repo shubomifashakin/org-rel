@@ -66,6 +66,10 @@ export class OrganizationsService {
     return `${cacheKeys.ORGANIZATION}${orgId}${cacheKeys.PROJECT}${projectId}`;
   }
 
+  private makeOrganizationCacheKey(orgId: string) {
+    return `${cacheKeys.ORGANIZATION}${orgId}`;
+  }
+
   async createOrganization(
     createOrganizationDto: CreateOrganizationDto,
     images?: Express.Multer.File[],
@@ -107,7 +111,7 @@ export class OrganizationsService {
     });
 
     await this.redisService
-      .setInCache(`${cacheKeys.ORGANIZATION}${org.id}`, org)
+      .setInCache(this.makeOrganizationCacheKey(org.id), org)
       .catch((error) => {
         //FIXME: IMPLEMENT PROPER ERROR LOGGING
         console.error('Error caching organization in Redis:', error);
@@ -141,7 +145,7 @@ export class OrganizationsService {
 
   async getOneOrganization(id: string) {
     const cache = await this.redisService
-      .getFromCache<CachedOrg>(`${cacheKeys.ORGANIZATION}${id}`)
+      .getFromCache<CachedOrg>(this.makeOrganizationCacheKey(id))
       .catch((error) => {
         //FIXME
         console.error(error);
@@ -166,7 +170,7 @@ export class OrganizationsService {
     }
 
     await this.redisService
-      .setInCache(`${cacheKeys.ORGANIZATION}${organization.id}`, organization)
+      .setInCache(this.makeOrganizationCacheKey(id), organization)
       .catch((error) => {
         //FIXME: IMPLEMENT PROPER ERROR LOGGING
         console.error('Error caching organization in Redis:', error);
@@ -200,7 +204,7 @@ export class OrganizationsService {
     });
 
     await this.redisService
-      .setInCache(`${cacheKeys.ORGANIZATION}${id}`, org)
+      .setInCache(this.makeOrganizationCacheKey(id), org)
       .catch((error) => {
         //FIXME
         console.error('Error updating organization in cache:', error);
@@ -224,7 +228,7 @@ export class OrganizationsService {
     });
 
     await this.redisService
-      .deleteFromCache(`${cacheKeys.ORGANIZATION}${id}`)
+      .deleteFromCache(this.makeOrganizationCacheKey(id))
       .catch((error) => {
         //FIXME
         console.error(error);
