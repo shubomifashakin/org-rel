@@ -58,6 +58,10 @@ export class OrganizationsService {
     }
   }
 
+  private makeUserCacheKey(orgId: string, userId: string) {
+    return `${cacheKeys.ORGANIZATION}${orgId}${cacheKeys.USER}${userId}`;
+  }
+
   async createOrganization(
     createOrganizationDto: CreateOrganizationDto,
     images?: Express.Multer.File[],
@@ -289,7 +293,7 @@ export class OrganizationsService {
 
   async getOneOrgUser(organizationId: string, userId: string) {
     const cache = await this.redisService
-      .getFromCache<CachedUser>(`${cacheKeys.USER}${userId}`)
+      .getFromCache<CachedUser>(this.makeUserCacheKey(organizationId, userId))
       .catch((error) => {
         //FIXME:
         console.error('Error fetching user from cache:', error);
@@ -297,9 +301,7 @@ export class OrganizationsService {
       });
 
     if (cache) {
-      return {
-        user: cache,
-      };
+      return cache;
     }
 
     const user = await this.databaseService.users.findUnique({
@@ -318,7 +320,7 @@ export class OrganizationsService {
     });
 
     if (!user) {
-      throw new NotFoundException('user not found');
+      throw new NotFoundException('user does not exist');
     }
 
     await this.redisService
@@ -329,7 +331,7 @@ export class OrganizationsService {
         return null;
       });
 
-    return { user };
+    return user;
   }
 
   async updateOrgUser(

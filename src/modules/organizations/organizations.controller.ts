@@ -135,19 +135,13 @@ export class OrganizationsController {
   @Get(':id/users/:userId') //get a user in an org
   getOneOrgUser(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-    @Param(
-      'userId',
-      new ParseUUIDPipe({
-        exceptionFactory: () => new BadRequestException('Invalid userId'),
-      }),
-    )
-    userId: string,
-  ): Promise<{
-    user: Pick<
+    @ValidateUUID('userId', 'Invalid user id') userId: string,
+  ): Promise<
+    Pick<
       Users,
       'id' | 'email' | 'fullname' | 'image' | 'organizationId' | 'username'
-    >;
-  }> {
+    >
+  > {
     return this.organizationsService.getOneOrgUser(organizationId, userId);
   }
 
