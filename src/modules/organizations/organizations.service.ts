@@ -108,21 +108,27 @@ export class OrganizationsService {
     return { message: 'Success' };
   }
 
-  async findAllOrganizations(name?: string) {
+  async getOrganizations(next?: string) {
     const orgs = await this.databaseService.organizations.findMany({
-      where: {
-        name: {
-          contains: name,
-        },
-      },
       select: {
         id: true,
         name: true,
         image: true,
       },
+      take: 10 + 1,
+      ...(next && { cursor: { id: next } }),
+      orderBy: {
+        id: 'desc',
+        createdAt: 'desc',
+      },
     });
 
-    return { organizations: orgs };
+    const cursor = orgs[orgs.length - 1]?.id;
+    return {
+      organizations: orgs.slice(0, 10),
+      hasNextPage: orgs.length > 10,
+      ...(cursor && { cursor }),
+    };
   }
 
   async findOrganization(id: string) {

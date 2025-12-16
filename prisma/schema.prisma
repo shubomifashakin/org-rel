@@ -22,7 +22,7 @@ model Organizations {
   id        String     @id @default(uuid())
   name      String
   image     String?
-  created   DateTime   @default(now())
+  createdAt   DateTime   @default(now())
   updatedAt DateTime   @default(now()) @updatedAt
   users     Users[]
   projects  Projects[]

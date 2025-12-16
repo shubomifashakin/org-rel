@@ -68,10 +68,12 @@ export class OrganizationsController {
   }
 
   @Get() //get all orgs
-  findAllOrganizations(@Query('name') name?: string): Promise<{
+  getOrganizations(@Query('next', ParseUUIDPipe) next?: string): Promise<{
     organizations: Pick<Organizations, 'id' | 'name' | 'image'>[];
+    hasNextPage: boolean;
+    cursor?: string;
   }> {
-    return this.organizationsService.findAllOrganizations(name);
+    return this.organizationsService.getOrganizations(next);
   }
 
   @Get(':id') //get a particular org
