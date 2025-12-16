@@ -146,32 +146,14 @@ export class OrganizationsController {
   }
 
   @Patch(':id/users/:userId') //update a user in an org
-  @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (_, file, cb) => {
-        if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
-          return cb(
-            new BadRequestException('Only img, png and jpeg files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
-  updateOrgUser(
+  @GetImage()
+  updateOneOrgUser(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-    @Param(
-      'userId',
-      new ParseUUIDPipe({
-        exceptionFactory: () => new BadRequestException('Invalid userId'),
-      }),
-    )
-    userId: string,
+    @ValidateUUID('userId', 'Invalid user id') userId: string,
     @Body() updateUserDto: UpdateUserDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
-    return this.organizationsService.updateOrgUser(
+    return this.organizationsService.updateOneOrgUser(
       organizationId,
       userId,
       updateUserDto,

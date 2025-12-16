@@ -334,7 +334,7 @@ export class OrganizationsService {
     return user;
   }
 
-  async updateOrgUser(
+  async updateOneOrgUser(
     orgId: string,
     userId: string,
     updateUserDto: UpdateUserDto,
@@ -368,7 +368,7 @@ export class OrganizationsService {
     });
 
     await this.redisService
-      .setInCache(`${cacheKeys.USER}${userId}`, user)
+      .setInCache(this.makeUserCacheKey(orgId, userId), user)
       .catch((error) => {
         //FIXME:
         console.error('Error updating user in cache:', error);
