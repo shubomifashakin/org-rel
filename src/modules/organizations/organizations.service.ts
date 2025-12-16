@@ -543,4 +543,6 @@ export class OrganizationsService {
 
     return { message: 'Success' };
   }
+
+  async deleteOrgProject(orgId: string, projectId: string) {}
 }

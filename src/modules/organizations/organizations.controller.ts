@@ -34,7 +34,7 @@ import { ValidateUUID } from './common/decorators/organizations-id-validator.dec
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
-  @Post()
+  @Post() //create an organization
   @HttpCode(200)
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -67,21 +67,21 @@ export class OrganizationsController {
     );
   }
 
-  @Get()
+  @Get() //get all orgs
   findAllOrganizations(@Query('name') name?: string): Promise<{
     organizations: Pick<Organizations, 'id' | 'name' | 'image'>[];
   }> {
     return this.organizationsService.findAllOrganizations(name);
   }
 
-  @Get(':id')
+  @Get(':id') //get a particular org
   findOrganization(
     @ValidateUUID('id', 'Invalid organization id') id: string,
   ): Promise<{ organization: Pick<Organizations, 'id' | 'name' | 'image'> }> {
     return this.organizationsService.findOrganization(id);
   }
 
-  @Patch(':id')
+  @Patch(':id') //update an org
   @UseInterceptors(
     FileInterceptor('file', {
       fileFilter: (_, file, cb) => {
@@ -107,14 +107,14 @@ export class OrganizationsController {
     );
   }
 
-  @Delete(':id')
+  @Delete(':id') //delete an org
   deleteOrganization(
     @ValidateUUID('id', 'Invalid organization id') id: string,
   ) {
     return this.organizationsService.deleteOrganization(id);
   }
 
-  @Post(':id/users')
+  @Post(':id/users') //create a user in an org
   @UseInterceptors(
     FileInterceptor('file', {
       fileFilter: (_, file, cb) => {
@@ -140,7 +140,7 @@ export class OrganizationsController {
     );
   }
 
-  @Get(':id/users')
+  @Get(':id/users') //get all the users in an org
   getOrgUsers(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
   ): Promise<{
@@ -152,7 +152,7 @@ export class OrganizationsController {
     return this.organizationsService.getOrgUsers(organizationId);
   }
 
-  @Get(':id/users/:userId')
+  @Get(':id/users/:userId') //get a user in an org
   getOneOrgUser(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Param(
@@ -171,7 +171,7 @@ export class OrganizationsController {
     return this.organizationsService.getOneOrgUser(organizationId, userId);
   }
 
-  @Patch(':id/users/:userId')
+  @Patch(':id/users/:userId') //update a user in an org
   @UseInterceptors(
     FileInterceptor('file', {
       fileFilter: (_, file, cb) => {
@@ -206,7 +206,7 @@ export class OrganizationsController {
   }
 
   @Throttle({ default: { limit: 5, ttl: seconds(30) } })
-  @Delete(':id/users/:userId')
+  @Delete(':id/users/:userId') //delete a user in an org
   deleteUser(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Param(
@@ -220,7 +220,7 @@ export class OrganizationsController {
     return this.organizationsService.deleteOrgUser(organizationId, userId);
   }
 
-  @Get(':id/projects')
+  @Get(':id/projects') //get the projects in an org
   getOrgProjects(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
   ) {
@@ -228,7 +228,7 @@ export class OrganizationsController {
   }
 
   @Throttle({ default: { limit: 5, ttl: seconds(10) } })
-  @Post(':id/projects')
+  @Post(':id/projects') //create a project in an org
   @UseInterceptors(
     FileInterceptor('file', {
       fileFilter: (_, file, cb) => {
@@ -254,7 +254,7 @@ export class OrganizationsController {
     );
   }
 
-  @Get(':id/projects/:projectId')
+  @Get(':id/projects/:projectId') //get a project in an org
   @UseInterceptors(
     FileInterceptor('file', {
       fileFilter: (_, file, cb) => {
@@ -281,7 +281,7 @@ export class OrganizationsController {
     return this.organizationsService.getOneProject(organizationId, projectId);
   }
 
-  @Patch(':id/projects/:projectId')
+  @Patch(':id/projects/:projectId') //update a project in an org
   @UseInterceptors(
     FileInterceptor('file', {
       fileFilter: (_, file, cb) => {
@@ -312,6 +312,23 @@ export class OrganizationsController {
       projectId,
       updateProjectDto,
       image,
+    );
+  }
+
+  @Delete(':id/projects/:projectId')
+  deleteOrgProject(
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @Param(
+      'projectId',
+      new ParseUUIDPipe({
+        exceptionFactory: () => new BadRequestException('Invalid projectId'),
+      }),
+    )
+    projectId: string,
+  ) {
+    return this.organizationsService.deleteOrgProject(
+      organizationId,
+      projectId,
     );
   }
 }
