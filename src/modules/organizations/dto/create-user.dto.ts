@@ -1,4 +1,5 @@
 import {
+  IsDefined,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -22,15 +23,22 @@ export class CreateUserDto implements Pick<
   @IsNotEmpty({ message: 'username is required' })
   username: string;
 
-  @IsStrongPassword({
-    minLength: 8,
-    minSymbols: 1,
-    minNumbers: 1,
-    minLowercase: 1,
-    minUppercase: 1,
-  })
+  @IsStrongPassword(
+    {
+      minLength: 8,
+      minSymbols: 1,
+      minNumbers: 1,
+      minLowercase: 1,
+      minUppercase: 1,
+    },
+    {
+      message:
+        'Password should must be at least 8 characters long and contain 1, lowercase, uppercase, number and symbol',
+    },
+  )
   password: string;
 
-  @IsEnum([Roles], { message: 'Invalid role' })
+  @IsDefined({ message: 'users role must be specified' })
+  @IsEnum(Roles, { message: 'Invalid role' })
   role: Roles;
 }

@@ -105,24 +105,13 @@ export class OrganizationsController {
     return this.organizationsService.deleteOneOrganization(id);
   }
 
+  //USERS
   @Post(':id/users') //create a user in an org
-  @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (_, file, cb) => {
-        if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
-          return cb(
-            new BadRequestException('Only img, png and jpeg files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
+  @GetImage()
   createOrgUser(
     @Body() createUserDto: CreateUserDto,
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file?: Express.Multer.File,
   ): Promise<{ message: string }> {
     return this.organizationsService.createOrgUser(
       organizationId,

@@ -226,158 +226,16 @@ export class OrganizationsService {
     return { message: 'success' };
   }
 
-  //projects
-  async getOrgProjects(id: string) {
-    const projects = await this.databaseService.projects.findMany({
-      where: { organizationId: id },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        userId: true,
-      },
-    });
-
-    return { projects };
-  }
-
-  async createOrgProject(
-    organizationId: string,
-    createProjectDto: CreateProjectDto,
-    image?: Express.Multer.File,
-  ) {
-    let s3Url: string | undefined = undefined;
-
-    if (image) {
-      s3Url = await this.uploadToS3(image);
-    }
-
-    const project = await this.databaseService.projects.create({
-      data: {
-        name: createProjectDto.name,
-        userId: createProjectDto.userId,
-        image: s3Url,
-        organizationId,
-      },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        userId: true,
-        organizationId: true,
-      },
-    });
-
-    await this.redisService
-      .setInCache(`${cacheKeys.PROJECT}${project.id}`, project)
-      .catch((error) => {
-        //FIXME: IMPLEMENT PROPER ERROR LOGGING
-        console.error('Error caching project in Redis:', error);
-      });
-
-    return { message: 'success' };
-  }
-
-  async getOneProject(organizationId: string, projectId: string) {
-    const cachedProject = await this.redisService
-      .getFromCache<CachedProject>(`${cacheKeys.PROJECT}${projectId}`)
-      .catch((error) => {
-        console.error('Error fetching project from Redis:', error);
-        return null;
-      });
-
-    if (cachedProject) {
-      return {
-        project: cachedProject,
-      };
-    }
-
-    const project = await this.databaseService.projects.findUnique({
-      where: { id: projectId, organizationId },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        userId: true,
-      },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    await this.redisService
-      .setInCache(`${cacheKeys.PROJECT}${project.id}`, project)
-      .catch((error) => {
-        //FIXME: IMPLEMENT PROPER ERROR LOGGING
-        console.error('Error caching project in Redis:', error);
-      });
-
-    return { project };
-  }
-
-  async updateOrgProject(
-    orgId: string,
-    projectId: string,
-    updateProjectDto: UpdateProjectDto,
-    image?: Express.Multer.File,
-  ) {
-    let s3Url: string | undefined = undefined;
-
-    if (image) {
-      s3Url = await this.uploadToS3(image);
-    }
-
-    const project = await this.databaseService.projects.update({
-      where: {
-        id: projectId,
-        organizationId: orgId,
-      },
-      data: {
-        image: s3Url,
-        name: updateProjectDto?.name,
-        userId: updateProjectDto?.userId,
-      },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        userId: true,
-        organizationId: true,
-      },
-    });
-
-    await this.redisService
-      .setInCache(`${cacheKeys.PROJECT}${projectId}`, project)
-      .catch((error) => {
-        //FIXME: IMPLEMENT PROPER ERROR LOGGER
-        console.error('Error updating project in Redis:', error);
-      });
-
-    return { message: 'success' };
-  }
-
-  // organization users
+  // USERs
   async createOrgUser(
     organizationId: string,
     createUserDto: CreateUserDto,
-    image: Express.Multer.File,
+    image?: Express.Multer.File,
   ) {
     let s3Url: string | undefined = undefined;
 
     if (image) {
-      const imageKey = uuid();
-      const bucket = process.env.BUCKET_NAME!;
-      await this.s3Service.send(
-        new PutObjectCommand({
-          Key: imageKey,
-          Bucket: bucket,
-          Body: image.buffer,
-          ContentType: image.mimetype,
-        }),
-      );
-
-      s3Url = `https://${bucket}.s3.amazonaws.com/${imageKey}`;
+      s3Url = await this.uploadToS3(image);
     }
 
     const user = await this.databaseService.users.create({
@@ -546,6 +404,137 @@ export class OrganizationsService {
       });
 
     return { message: 'Success' };
+  }
+
+  //projects
+  async getOrgProjects(id: string) {
+    const projects = await this.databaseService.projects.findMany({
+      where: { organizationId: id },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        userId: true,
+      },
+    });
+
+    return { projects };
+  }
+
+  async createOrgProject(
+    organizationId: string,
+    createProjectDto: CreateProjectDto,
+    image?: Express.Multer.File,
+  ) {
+    let s3Url: string | undefined = undefined;
+
+    if (image) {
+      s3Url = await this.uploadToS3(image);
+    }
+
+    const project = await this.databaseService.projects.create({
+      data: {
+        name: createProjectDto.name,
+        userId: createProjectDto.userId,
+        image: s3Url,
+        organizationId,
+      },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        userId: true,
+        organizationId: true,
+      },
+    });
+
+    await this.redisService
+      .setInCache(`${cacheKeys.PROJECT}${project.id}`, project)
+      .catch((error) => {
+        //FIXME: IMPLEMENT PROPER ERROR LOGGING
+        console.error('Error caching project in Redis:', error);
+      });
+
+    return { message: 'success' };
+  }
+
+  async getOneProject(organizationId: string, projectId: string) {
+    const cachedProject = await this.redisService
+      .getFromCache<CachedProject>(`${cacheKeys.PROJECT}${projectId}`)
+      .catch((error) => {
+        console.error('Error fetching project from Redis:', error);
+        return null;
+      });
+
+    if (cachedProject) {
+      return {
+        project: cachedProject,
+      };
+    }
+
+    const project = await this.databaseService.projects.findUnique({
+      where: { id: projectId, organizationId },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        userId: true,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    await this.redisService
+      .setInCache(`${cacheKeys.PROJECT}${project.id}`, project)
+      .catch((error) => {
+        //FIXME: IMPLEMENT PROPER ERROR LOGGING
+        console.error('Error caching project in Redis:', error);
+      });
+
+    return { project };
+  }
+
+  async updateOrgProject(
+    orgId: string,
+    projectId: string,
+    updateProjectDto: UpdateProjectDto,
+    image?: Express.Multer.File,
+  ) {
+    let s3Url: string | undefined = undefined;
+
+    if (image) {
+      s3Url = await this.uploadToS3(image);
+    }
+
+    const project = await this.databaseService.projects.update({
+      where: {
+        id: projectId,
+        organizationId: orgId,
+      },
+      data: {
+        image: s3Url,
+        name: updateProjectDto?.name,
+        userId: updateProjectDto?.userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        userId: true,
+        organizationId: true,
+      },
+    });
+
+    await this.redisService
+      .setInCache(`${cacheKeys.PROJECT}${projectId}`, project)
+      .catch((error) => {
+        //FIXME: IMPLEMENT PROPER ERROR LOGGER
+        console.error('Error updating project in Redis:', error);
+      });
+
+    return { message: 'success' };
   }
 
   async deleteOrgProject(organizationId: string, projectId: string) {
