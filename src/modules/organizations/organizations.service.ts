@@ -12,7 +12,11 @@ import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/updateProject.dto.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { cacheKeys } from './utils.js';
-import { Organizations, Projects, Users } from 'generated/prisma/client.js';
+import {
+  Organizations,
+  Projects,
+  Users,
+} from '../../../generated/prisma/client.js';
 
 type CachedUser = Pick<
   Users,
@@ -281,7 +285,8 @@ export class OrganizationsService {
     return { message: 'Success' };
   }
 
-  async getOrgUsers(organizationId: string) {
+  async getOrgUsers(organizationId: string, next?: string) {
+    const limit = 10;
     const users = await this.databaseService.users.findMany({
       where: {
         organizationId,
@@ -294,9 +299,20 @@ export class OrganizationsService {
         username: true,
         organizationId: true,
       },
+      take: limit + 1,
+      ...(next && { cursor: { id: next } }),
+      orderBy: {
+        id: 'desc',
+        createdAt: 'desc',
+      },
     });
 
-    return { users };
+    const cursor = users[users.length - 1]?.id;
+    return {
+      users: users.slice(0, limit),
+      hasNextPage: users.length > limit,
+      ...(cursor && { cursor }),
+    };
   }
 
   async getOneOrgUser(organizationId: string, userId: string) {
@@ -416,8 +432,9 @@ export class OrganizationsService {
     return { message: 'Success' };
   }
 
-  //projects
-  async getOrgProjects(id: string) {
+  //PROJECTS
+  async getOrgProjects(id: string, next?: string) {
+    const limit = 10;
     const projects = await this.databaseService.projects.findMany({
       where: { organizationId: id },
       select: {
@@ -425,10 +442,22 @@ export class OrganizationsService {
         name: true,
         image: true,
         userId: true,
+        organizationId: true,
+      },
+      take: limit + 1,
+      ...(next && { cursor: { id: next } }),
+      orderBy: {
+        id: 'desc',
+        createdAt: 'desc',
       },
     });
 
-    return { projects };
+    const cursor = projects[projects.length - 1]?.id;
+    return {
+      projects: projects.slice(0, limit),
+      hasNextPage: projects.length > limit,
+      ...(cursor && { cursor }),
+    };
   }
 
   async createOrgProject(

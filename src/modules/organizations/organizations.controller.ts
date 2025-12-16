@@ -26,6 +26,7 @@ import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/updateProject.dto.js';
 import { ValidateUUID } from './common/decorators/uuid-validator.decorator.js';
 import { GetImage } from './common/decorators/get-file.decorator.js';
+import { Projects } from '../../../generated/prisma/client.js';
 
 @Controller('organizations')
 export class OrganizationsController {
@@ -119,13 +120,16 @@ export class OrganizationsController {
   @Get(':id/users') //get all the users in an org
   getOrgUsers(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @Query('next', ParseUUIDPipe) next?: string,
   ): Promise<{
     users: Pick<
       Users,
       'id' | 'email' | 'fullname' | 'image' | 'organizationId' | 'username'
     >[];
+    hasNextPage: boolean;
+    cursor?: string;
   }> {
-    return this.organizationsService.getOrgUsers(organizationId);
+    return this.organizationsService.getOrgUsers(organizationId, next);
   }
 
   @Get(':id/users/:userId') //get a user in an org
@@ -170,8 +174,16 @@ export class OrganizationsController {
   @Get(':id/projects') //get the projects in an org
   getOrgProjects(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-  ) {
-    return this.organizationsService.getOrgProjects(organizationId);
+    @Query('next', ParseUUIDPipe) next?: string,
+  ): Promise<{
+    projects: Pick<
+      Projects,
+      'id' | 'name' | 'image' | 'userId' | 'organizationId'
+    >[];
+    hasNextPage: boolean;
+    cursor?: string;
+  }> {
+    return this.organizationsService.getOrgProjects(organizationId, next);
   }
 
   @Throttle({ default: { limit: 5, ttl: seconds(10) } })
