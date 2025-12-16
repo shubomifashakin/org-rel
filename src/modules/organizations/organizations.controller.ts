@@ -163,19 +163,14 @@ export class OrganizationsController {
 
   @Throttle({ default: { limit: 5, ttl: seconds(30) } })
   @Delete(':id/users/:userId') //delete a user in an org
-  deleteUser(
+  deleteOneOrgUser(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-    @Param(
-      'userId',
-      new ParseUUIDPipe({
-        exceptionFactory: () => new BadRequestException('Invalid userId'),
-      }),
-    )
-    userId: string,
+    @ValidateUUID('userId', 'Invalid user id') userId: string,
   ): Promise<{ message: string }> {
-    return this.organizationsService.deleteOrgUser(organizationId, userId);
+    return this.organizationsService.deleteOneOrgUser(organizationId, userId);
   }
 
+  //PROJECTS
   @Get(':id/projects') //get the projects in an org
   getOrgProjects(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,

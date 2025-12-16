@@ -378,7 +378,7 @@ export class OrganizationsService {
     return { message: 'Success' };
   }
 
-  async deleteOrgUser(orgId: string, userId: string) {
+  async deleteOneOrgUser(orgId: string, userId: string) {
     const userExist = await this.databaseService.users.findUnique({
       where: {
         id: userId,
@@ -398,7 +398,7 @@ export class OrganizationsService {
     });
 
     await this.redisService
-      .deleteFromCache(`${cacheKeys.USER}${userId}`)
+      .deleteFromCache(this.makeUserCacheKey(orgId, userId))
       .catch((error) => {
         //FIXME:
         console.error('Error deleting user from cache:', error);
