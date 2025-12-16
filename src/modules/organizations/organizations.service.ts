@@ -267,7 +267,7 @@ export class OrganizationsService {
     });
 
     await this.redisService
-      .setInCache(`${cacheKeys.USER}${user.id}`, user)
+      .setInCache(this.makeUserCacheKey(organizationId, user.id), user)
       .catch((error) => {
         //FIXME:
         console.error('Error setting user in cache:', error);
