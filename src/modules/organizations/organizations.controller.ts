@@ -4,7 +4,6 @@ import {
   Post,
   Body,
   Patch,
-  Param,
   Delete,
   UseInterceptors,
   UploadedFile,
@@ -218,17 +217,11 @@ export class OrganizationsController {
   }
 
   @Delete(':id/projects/:projectId')
-  deleteOrgProject(
+  deleteOneOrgProject(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-    @Param(
-      'projectId',
-      new ParseUUIDPipe({
-        exceptionFactory: () => new BadRequestException('Invalid projectId'),
-      }),
-    )
-    projectId: string,
+    @ValidateUUID('projectId', 'Invalid project id') projectId: string,
   ) {
-    return this.organizationsService.deleteOrgProject(
+    return this.organizationsService.deleteOneOrgProject(
       organizationId,
       projectId,
     );

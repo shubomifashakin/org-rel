@@ -497,7 +497,7 @@ export class OrganizationsService {
     }
 
     await this.redisService
-      .setInCache(`${cacheKeys.PROJECT}${project.id}`, project)
+      .setInCache(this.makeProjectCacheKey(organizationId, projectId), project)
       .catch((error) => {
         //FIXME: IMPLEMENT PROPER ERROR LOGGING
         console.error('Error caching project in Redis:', error);
@@ -547,7 +547,7 @@ export class OrganizationsService {
     return { message: 'success' };
   }
 
-  async deleteOrgProject(organizationId: string, projectId: string) {
+  async deleteOneOrgProject(organizationId: string, projectId: string) {
     const projectExists = await this.databaseService.projects.findUnique({
       where: {
         id: projectId,
@@ -565,6 +565,14 @@ export class OrganizationsService {
         organizationId,
       },
     });
+
+    await this.redisService
+      .deleteFromCache(this.makeProjectCacheKey(organizationId, projectId))
+      .catch((error) => {
+        //FIXME:
+        console.error('Error deleting project from cache:', error);
+        return null;
+      });
 
     return { message: 'success' };
   }
