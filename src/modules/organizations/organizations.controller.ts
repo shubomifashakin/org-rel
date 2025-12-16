@@ -24,6 +24,7 @@ import { UpdateUserDto } from './dto/update-user.dto.js';
 import { seconds, Throttle } from '@nestjs/throttler';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/updateProject.dto.js';
+import { ValidateUUID } from './common/decorators/organizations-id-validator.decorator.js';
 
 @Controller('organizations')
 export class OrganizationsController {
@@ -63,14 +64,7 @@ export class OrganizationsController {
 
   @Get(':id')
   findOrganization(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    id: string,
+    @ValidateUUID('id', 'Invalid organization id') id: string,
   ): Promise<{ organization: Pick<Organizations, 'id' | 'name' | 'image'> }> {
     return this.organizationsService.findOrganization(id);
   }
@@ -90,14 +84,7 @@ export class OrganizationsController {
     }),
   )
   updateOrganization(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    id: string,
+    @ValidateUUID('id', 'Invalid organization id') id: string,
     @Body() updateOrganizationDto: UpdateOrganizationDto,
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<{ message: string }> {
@@ -110,14 +97,7 @@ export class OrganizationsController {
 
   @Delete(':id')
   deleteOrganization(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    id: string,
+    @ValidateUUID('id', 'Invalid organization id') id: string,
   ) {
     return this.organizationsService.deleteOrganization(id);
   }
@@ -138,14 +118,7 @@ export class OrganizationsController {
   )
   createOrgUser(
     @Body() createUserDto: CreateUserDto,
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<{ message: string }> {
     return this.organizationsService.createOrgUser(
@@ -157,14 +130,7 @@ export class OrganizationsController {
 
   @Get(':id/users')
   getOrgUsers(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
   ): Promise<{
     users: Pick<
       Users,
@@ -176,14 +142,7 @@ export class OrganizationsController {
 
   @Get(':id/users/:userId')
   getOneOrgUser(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Param(
       'userId',
       new ParseUUIDPipe({
@@ -215,14 +174,7 @@ export class OrganizationsController {
     }),
   )
   updateOrgUser(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Param(
       'userId',
       new ParseUUIDPipe({
@@ -244,14 +196,7 @@ export class OrganizationsController {
   @Throttle({ default: { limit: 5, ttl: seconds(30) } })
   @Delete(':id/users/:userId')
   deleteUser(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Param(
       'userId',
       new ParseUUIDPipe({
@@ -265,14 +210,7 @@ export class OrganizationsController {
 
   @Get(':id/projects')
   getOrgProjects(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
   ) {
     return this.organizationsService.getOrgProjects(organizationId);
   }
@@ -293,14 +231,7 @@ export class OrganizationsController {
     }),
   )
   createOrgProject(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Body() createProjectDto: CreateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
@@ -326,14 +257,7 @@ export class OrganizationsController {
     }),
   )
   getOneProject(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Param(
       'projectId',
       new ParseUUIDPipe({
@@ -360,14 +284,7 @@ export class OrganizationsController {
     }),
   )
   updateOrgProject(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () =>
-          new BadRequestException('Invalid organizationId'),
-      }),
-    )
-    organizationId: string,
+    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Param(
       'projectId',
       new ParseUUIDPipe({
