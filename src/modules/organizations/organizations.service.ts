@@ -544,5 +544,25 @@ export class OrganizationsService {
     return { message: 'Success' };
   }
 
-  async deleteOrgProject(orgId: string, projectId: string) {}
+  async deleteOrgProject(organizationId: string, projectId: string) {
+    const projectExists = await this.databaseService.projects.findUnique({
+      where: {
+        id: projectId,
+        organizationId,
+      },
+    });
+
+    if (!projectExists) {
+      return { message: 'success' };
+    }
+
+    await this.databaseService.projects.delete({
+      where: {
+        id: projectId,
+        organizationId,
+      },
+    });
+
+    return { message: 'success' };
+  }
 }
