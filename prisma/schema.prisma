@@ -13,6 +13,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Roles{
+  ADMIN
+  USER
+}
+
 model Organizations {
   id        String     @id @default(uuid())
   name      String
@@ -26,14 +31,18 @@ model Organizations {
 model Users {
   id             String        @id @default(uuid())
   email          String        @unique
-  name           String
+  fullname       String
   username       String        @unique
   image          String?
   created        DateTime      @default(now())
   updatedAt      DateTime      @default(now()) @updatedAt
   projects       Projects[]
   organizationId String
-  organization   Organizations @relation(fields: [organizationId], references: [id])
+  role           Roles
+  password       String
+
+  sessions       Sessions[]
+  organization   Organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Projects {
@@ -45,5 +54,15 @@ model Projects {
   userId         String?
   user           Users?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   organizationId String
-  organization   Organizations @relation(fields: [organizationId], references: [id])
+  organization   Organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+
+model Sessions {
+  id String @id @default(uuid())
+  userId String
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }

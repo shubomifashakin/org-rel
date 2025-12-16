@@ -12,6 +12,19 @@ import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/updateProject.dto.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { cacheKeys } from './utils.js';
+import { Organizations, Projects, Users } from 'generated/prisma/client.js';
+
+type CachedUser = Pick<
+  Users,
+  'id' | 'email' | 'fullname' | 'image' | 'username' | 'organizationId'
+>;
+
+type CachedProject = Pick<
+  Projects,
+  'id' | 'name' | 'image' | 'userId' | 'organizationId'
+>;
+
+type CachedOrg = Pick<Organizations, 'id' | 'name' | 'image'>;
 
 @Injectable()
 export class OrganizationsService {
@@ -21,36 +34,62 @@ export class OrganizationsService {
     private readonly redisService: RedisService,
   ) {}
 
-  private async uploadToS3(image: Express.Multer.File): Promise<string> {
-    const imageKey = uuid();
-    const bucket = process.env.BUCKET_NAME!;
+  private async uploadToS3(
+    image: Express.Multer.File,
+  ): Promise<string | undefined> {
+    try {
+      const imageKey = uuid();
+      const bucket = process.env.BUCKET_NAME!;
 
-    await this.s3Service.send(
-      new PutObjectCommand({
-        Key: imageKey,
-        Bucket: bucket,
-        Body: image.buffer,
-        ContentType: image.mimetype,
-      }),
-    );
+      await this.s3Service.send(
+        new PutObjectCommand({
+          Key: imageKey,
+          Bucket: bucket,
+          Body: image.buffer,
+          ContentType: image.mimetype,
+        }),
+      );
 
-    return `https://${bucket}.s3.amazonaws.com/${imageKey}`;
+      return `https://${bucket}.s3.amazonaws.com/${imageKey}`;
+    } catch (error) {
+      console.error(error);
+      //FIXME: LOG ERROR PROPERLY
+      return undefined;
+    }
   }
 
   async createOrganization(
     createOrganizationDto: CreateOrganizationDto,
-    image: Express.Multer.File,
+    images?: Express.Multer.File[],
   ) {
     let s3Url: string | undefined = undefined;
+    let userImageUrl: string | undefined = undefined;
 
-    if (image) {
-      s3Url = await this.uploadToS3(image);
+    const orgImage = images?.find((image) => image.fieldname === 'orgImage');
+    const userImage = images?.find((image) => image.fieldname === 'userImage');
+
+    if (orgImage) {
+      s3Url = await this.uploadToS3(orgImage);
+    }
+
+    if (userImage) {
+      userImageUrl = await this.uploadToS3(userImage);
     }
 
     const org = await this.databaseService.organizations.create({
       data: {
         name: createOrganizationDto.name,
         image: s3Url,
+        users: {
+          create: {
+            role: 'ADMIN',
+            image: userImageUrl,
+            email: createOrganizationDto.user.email,
+            fullname: createOrganizationDto.user.fullname,
+            username: createOrganizationDto.user.username,
+            password: createOrganizationDto.user.password,
+          },
+        },
       },
       select: {
         id: true,
@@ -88,11 +127,7 @@ export class OrganizationsService {
 
   async findOrganization(id: string) {
     const cache = await this.redisService
-      .getFromCache<{
-        id: string;
-        name: string;
-        image: string;
-      }>(`${cacheKeys.ORGANIZATION}${id}`)
+      .getFromCache<CachedOrg>(`${cacheKeys.ORGANIZATION}${id}`)
       .catch((error) => {
         //FIXME
         console.error(error);
@@ -225,6 +260,7 @@ export class OrganizationsService {
         name: true,
         image: true,
         userId: true,
+        organizationId: true,
       },
     });
 
@@ -240,12 +276,7 @@ export class OrganizationsService {
 
   async getOneProject(organizationId: string, projectId: string) {
     const cachedProject = await this.redisService
-      .getFromCache<{
-        id: string;
-        name: string;
-        image: string;
-        userId: string;
-      }>(`${cacheKeys.PROJECT}${projectId}`)
+      .getFromCache<CachedProject>(`${cacheKeys.PROJECT}${projectId}`)
       .catch((error) => {
         console.error('Error fetching project from Redis:', error);
         return null;
@@ -308,6 +339,7 @@ export class OrganizationsService {
         name: true,
         image: true,
         userId: true,
+        organizationId: true,
       },
     });
 
@@ -347,15 +379,17 @@ export class OrganizationsService {
     const user = await this.databaseService.users.create({
       data: {
         image: s3Url,
-        name: createUserDto.name,
+        fullname: createUserDto.fullname,
         email: createUserDto.email,
         organizationId: organizationId,
         username: createUserDto.username,
+        role: createUserDto.role,
+        password: createUserDto.password,
       },
       select: {
         id: true,
         email: true,
-        name: true,
+        fullname: true,
         image: true,
         username: true,
         organizationId: true,
@@ -381,7 +415,7 @@ export class OrganizationsService {
       select: {
         id: true,
         email: true,
-        name: true,
+        fullname: true,
         image: true,
         username: true,
         organizationId: true,
@@ -393,14 +427,7 @@ export class OrganizationsService {
 
   async getOneOrgUser(organizationId: string, userId: string) {
     const cache = await this.redisService
-      .getFromCache<{
-        id: string;
-        email: string;
-        name: string;
-        image: string;
-        username: string;
-        organizationId: string;
-      }>(`${cacheKeys.USER}${userId}`)
+      .getFromCache<CachedUser>(`${cacheKeys.USER}${userId}`)
       .catch((error) => {
         //FIXME:
         console.error('Error fetching user from cache:', error);
@@ -421,7 +448,7 @@ export class OrganizationsService {
       select: {
         id: true,
         email: true,
-        name: true,
+        fullname: true,
         image: true,
         username: true,
         organizationId: true,
@@ -462,14 +489,14 @@ export class OrganizationsService {
       },
       data: {
         image: s3Url,
-        name: updateUserDto?.name,
+        fullname: updateUserDto?.fullname,
         email: updateUserDto?.email,
         username: updateUserDto?.username,
       },
       select: {
         id: true,
         email: true,
-        name: true,
+        fullname: true,
         username: true,
         image: true,
         organizationId: true,

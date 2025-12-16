@@ -8,6 +8,7 @@ import compression from 'compression';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: { methods: ['GET', 'POST', 'PUT', 'DELETE'], origin: '*' },
+    // logger: true,
   });
 
   app.setGlobalPrefix('api/v1');

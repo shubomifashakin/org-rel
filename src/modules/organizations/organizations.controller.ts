@@ -12,8 +12,12 @@ import {
   Query,
   ParseUUIDPipe,
   HttpCode,
+  UploadedFiles,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 
 import { OrganizationsService } from './organizations.service.js';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
@@ -33,25 +37,33 @@ export class OrganizationsController {
   @Post()
   @HttpCode(200)
   @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (_, file, cb) => {
-        if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
-          return cb(
-            new BadRequestException('Only img, png and jpeg files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
+    FileFieldsInterceptor(
+      [
+        { name: 'orgImage', maxCount: 1 },
+        { name: 'userImage', maxCount: 1 },
+      ],
+      {
+        fileFilter: (_, file, cb) => {
+          if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
+            return cb(
+              new BadRequestException(
+                'Only img, png and jpeg files are allowed',
+              ),
+              false,
+            );
+          }
+          cb(null, true);
+        },
       },
-    }),
+    ),
   )
   createOrganization(
-    @UploadedFile() file: Express.Multer.File,
     @Body() createOrganizationDto: CreateOrganizationDto,
+    @UploadedFiles() images?: Express.Multer.File[],
   ) {
     return this.organizationsService.createOrganization(
       createOrganizationDto,
-      file,
+      images,
     );
   }
 
@@ -134,7 +146,7 @@ export class OrganizationsController {
   ): Promise<{
     users: Pick<
       Users,
-      'id' | 'email' | 'name' | 'image' | 'organizationId' | 'username'
+      'id' | 'email' | 'fullname' | 'image' | 'organizationId' | 'username'
     >[];
   }> {
     return this.organizationsService.getOrgUsers(organizationId);
@@ -153,7 +165,7 @@ export class OrganizationsController {
   ): Promise<{
     user: Pick<
       Users,
-      'id' | 'email' | 'name' | 'image' | 'organizationId' | 'username'
+      'id' | 'email' | 'fullname' | 'image' | 'organizationId' | 'username'
     >;
   }> {
     return this.organizationsService.getOneOrgUser(organizationId, userId);

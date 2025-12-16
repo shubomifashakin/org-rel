@@ -16,6 +16,7 @@ import { HealthModule } from './modules/health/health.module.js';
 import { RedisModule } from './core/redis/redis.module.js';
 import { RedisService } from './core/redis/redis.service.js';
 import { logger } from './middlewares/logger.middleware.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { logger } from './middlewares/logger.middleware.js';
       },
     }),
     S3Module,
+    AuthModule,
     HealthModule,
   ],
   controllers: [],
