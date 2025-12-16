@@ -194,30 +194,14 @@ export class OrganizationsController {
   }
 
   @Get(':id/projects/:projectId') //get a project in an org
-  @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (_, file, cb) => {
-        if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
-          return cb(
-            new BadRequestException('Only img, png and jpeg files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
-  getOneProject(
+  getOneOrgProject(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-    @Param(
-      'projectId',
-      new ParseUUIDPipe({
-        exceptionFactory: () => new BadRequestException('Invalid projectId'),
-      }),
-    )
-    projectId: string,
+    @ValidateUUID('projectId', 'Invalid project id') projectId: string,
   ) {
-    return this.organizationsService.getOneProject(organizationId, projectId);
+    return this.organizationsService.getOneOrgProject(
+      organizationId,
+      projectId,
+    );
   }
 
   @Patch(':id/projects/:projectId') //update a project in an org

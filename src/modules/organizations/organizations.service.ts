@@ -464,18 +464,21 @@ export class OrganizationsService {
     return { message: 'success' };
   }
 
-  async getOneProject(organizationId: string, projectId: string) {
+  async getOneOrgProject(
+    organizationId: string,
+    projectId: string,
+  ): Promise<CachedProject> {
     const cachedProject = await this.redisService
-      .getFromCache<CachedProject>(`${cacheKeys.PROJECT}${projectId}`)
+      .getFromCache<CachedProject>(
+        this.makeProjectCacheKey(organizationId, projectId),
+      )
       .catch((error) => {
         console.error('Error fetching project from Redis:', error);
         return null;
       });
 
     if (cachedProject) {
-      return {
-        project: cachedProject,
-      };
+      return cachedProject;
     }
 
     const project = await this.databaseService.projects.findUnique({
@@ -484,6 +487,7 @@ export class OrganizationsService {
         id: true,
         name: true,
         image: true,
+        organizationId: true,
         userId: true,
       },
     });
@@ -499,7 +503,7 @@ export class OrganizationsService {
         console.error('Error caching project in Redis:', error);
       });
 
-    return { project };
+    return project;
   }
 
   async updateOrgProject(
