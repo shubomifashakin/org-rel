@@ -202,7 +202,7 @@ export class OrganizationsService {
     return { message: 'success' };
   }
 
-  async deleteOrganization(id: string) {
+  async deleteOneOrganization(id: string) {
     const orgExists = await this.databaseService.organizations.findUnique({
       where: { id },
     });

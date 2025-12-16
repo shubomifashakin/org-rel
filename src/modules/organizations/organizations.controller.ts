@@ -99,10 +99,10 @@ export class OrganizationsController {
   }
 
   @Delete(':id') //delete an org
-  deleteOrganization(
+  deleteOneOrganization(
     @ValidateUUID('id', 'Invalid organization id') id: string,
   ) {
-    return this.organizationsService.deleteOrganization(id);
+    return this.organizationsService.deleteOneOrganization(id);
   }
 
   @Post(':id/users') //create a user in an org
