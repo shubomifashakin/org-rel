@@ -14,10 +14,7 @@ import {
   HttpCode,
   UploadedFiles,
 } from '@nestjs/common';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-} from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 import { OrganizationsService } from './organizations.service.js';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
@@ -205,32 +202,14 @@ export class OrganizationsController {
   }
 
   @Patch(':id/projects/:projectId') //update a project in an org
-  @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (_, file, cb) => {
-        if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
-          return cb(
-            new BadRequestException('Only img, png and jpeg files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
-  updateOrgProject(
+  @GetImage()
+  updateOneOrgProject(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-    @Param(
-      'projectId',
-      new ParseUUIDPipe({
-        exceptionFactory: () => new BadRequestException('Invalid projectId'),
-      }),
-    )
-    projectId: string,
+    @ValidateUUID('projectId', 'Invalid project id') projectId: string,
     @Body() updateProjectDto: UpdateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
-    return this.organizationsService.updateOrgProject(
+    return this.organizationsService.updateOneOrgProject(
       organizationId,
       projectId,
       updateProjectDto,

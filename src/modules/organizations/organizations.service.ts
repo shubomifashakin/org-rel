@@ -506,7 +506,7 @@ export class OrganizationsService {
     return project;
   }
 
-  async updateOrgProject(
+  async updateOneOrgProject(
     orgId: string,
     projectId: string,
     updateProjectDto: UpdateProjectDto,
@@ -538,7 +538,7 @@ export class OrganizationsService {
     });
 
     await this.redisService
-      .setInCache(`${cacheKeys.PROJECT}${projectId}`, project)
+      .setInCache(this.makeProjectCacheKey(orgId, projectId), project)
       .catch((error) => {
         //FIXME: IMPLEMENT PROPER ERROR LOGGER
         console.error('Error updating project in Redis:', error);
