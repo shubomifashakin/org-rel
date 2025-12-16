@@ -6,7 +6,6 @@ import {
   Patch,
   Param,
   Delete,
-  ValidationPipe,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
@@ -47,7 +46,7 @@ export class OrganizationsController {
   )
   createOrganization(
     @UploadedFile() file: Express.Multer.File,
-    @Body(ValidationPipe) createOrganizationDto: CreateOrganizationDto,
+    @Body() createOrganizationDto: CreateOrganizationDto,
   ) {
     return this.organizationsService.createOrganization(
       createOrganizationDto,
@@ -99,7 +98,7 @@ export class OrganizationsController {
       }),
     )
     id: string,
-    @Body(ValidationPipe) updateOrganizationDto: UpdateOrganizationDto,
+    @Body() updateOrganizationDto: UpdateOrganizationDto,
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<{ message: string }> {
     return this.organizationsService.updateOrganization(
@@ -138,7 +137,7 @@ export class OrganizationsController {
     }),
   )
   createOrgUser(
-    @Body(ValidationPipe) createUserDto: CreateUserDto,
+    @Body() createUserDto: CreateUserDto,
     @Param(
       'id',
       new ParseUUIDPipe({
@@ -231,7 +230,7 @@ export class OrganizationsController {
       }),
     )
     userId: string,
-    @Body(ValidationPipe) updateUserDto: UpdateUserDto,
+    @Body() updateUserDto: UpdateUserDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
     return this.organizationsService.updateOrgUser(
@@ -302,7 +301,7 @@ export class OrganizationsController {
       }),
     )
     organizationId: string,
-    @Body(ValidationPipe) createProjectDto: CreateProjectDto,
+    @Body() createProjectDto: CreateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
     return this.organizationsService.createOrgProject(
@@ -376,7 +375,7 @@ export class OrganizationsController {
       }),
     )
     projectId: string,
-    @Body(ValidationPipe) updateProjectDto: UpdateProjectDto,
+    @Body() updateProjectDto: UpdateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
     return this.organizationsService.updateOrgProject(
