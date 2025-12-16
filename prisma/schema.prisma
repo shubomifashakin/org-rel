@@ -13,7 +13,7 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Roles{
+enum Roles {
   ADMIN
   USER
 }
@@ -22,47 +22,68 @@ model Organizations {
   id        String     @id @default(uuid())
   name      String
   image     String?
-  createdAt   DateTime   @default(now())
+  createdAt DateTime   @default(now())
   updatedAt DateTime   @default(now()) @updatedAt
-  users     Users[]
   projects  Projects[]
+
+  users OrganizationsOnUsers[]
 }
 
 model Users {
-  id             String        @id @default(uuid())
-  email          String        @unique
-  fullname       String
-  username       String        @unique
-  image          String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @default(now()) @updatedAt
-  projects       Projects[]
-  organizationId String
-  role           Roles
-  password       String
+  id       String  @id @default(uuid())
+  email    String  @unique
+  fullname String
+  username String  @unique
+  password String
+  image    String?
 
-  sessions       Sessions[]
-  organization   Organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  projects      Projects[]
+  sessions      Sessions[]
+  organizations OrganizationsOnUsers[]
 }
 
 model Projects {
   id             String        @id @default(uuid())
-  name           String        @unique
+  name           String
   image          String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @default(now()) @updatedAt
   userId         String?
-  user           Users?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user           Users?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   organizationId String
-  organization   Organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organizations @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, name])
+  @@index([organizationId, userId])
 }
 
+model OrganizationsOnUsers {
+  organizationId String
+  userId         String
+
+  role       Roles
+  assignedAt DateTime @default(now())
+
+  organization Organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         Users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+}
 
 model Sessions {
-  id String @id @default(uuid())
-  userId String
-  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime 
+  id        String   @id @default(uuid())
+  userId    String
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  ipAddress String?
+  userAgent String?
+
+  @@index([userId, expiresAt])
 }
