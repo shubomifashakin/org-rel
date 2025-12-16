@@ -131,7 +131,7 @@ export class OrganizationsService {
     };
   }
 
-  async findOrganization(id: string) {
+  async getOneOrganization(id: string) {
     const cache = await this.redisService
       .getFromCache<CachedOrg>(`${cacheKeys.ORGANIZATION}${id}`)
       .catch((error) => {
@@ -141,9 +141,7 @@ export class OrganizationsService {
       });
 
     if (cache) {
-      return {
-        organization: cache,
-      };
+      return cache;
     }
 
     const organization = await this.databaseService.organizations.findUnique({
@@ -166,7 +164,7 @@ export class OrganizationsService {
         console.error('Error caching organization in Redis:', error);
       });
 
-    return { organization };
+    return organization;
   }
 
   async updateOrganization(

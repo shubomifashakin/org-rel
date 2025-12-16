@@ -77,10 +77,10 @@ export class OrganizationsController {
   }
 
   @Get(':id') //get a particular org
-  findOrganization(
+  getOneOrganization(
     @ValidateUUID('id', 'Invalid organization id') id: string,
-  ): Promise<{ organization: Pick<Organizations, 'id' | 'name' | 'image'> }> {
-    return this.organizationsService.findOrganization(id);
+  ): Promise<Pick<Organizations, 'id' | 'name' | 'image'>> {
+    return this.organizationsService.getOneOrganization(id);
   }
 
   @Patch(':id') //update an org
