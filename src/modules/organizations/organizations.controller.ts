@@ -180,19 +180,7 @@ export class OrganizationsController {
 
   @Throttle({ default: { limit: 5, ttl: seconds(10) } })
   @Post(':id/projects') //create a project in an org
-  @UseInterceptors(
-    FileInterceptor('file', {
-      fileFilter: (_, file, cb) => {
-        if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
-          return cb(
-            new BadRequestException('Only img, png and jpeg files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
+  @GetImage()
   createOrgProject(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Body() createProjectDto: CreateProjectDto,

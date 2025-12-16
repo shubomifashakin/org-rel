@@ -62,6 +62,10 @@ export class OrganizationsService {
     return `${cacheKeys.ORGANIZATION}${orgId}${cacheKeys.USER}${userId}`;
   }
 
+  private makeProjectCacheKey(orgId: string, projectId: string) {
+    return `${cacheKeys.ORGANIZATION}${orgId}${cacheKeys.PROJECT}${projectId}`;
+  }
+
   async createOrganization(
     createOrganizationDto: CreateOrganizationDto,
     images?: Express.Multer.File[],
@@ -451,7 +455,7 @@ export class OrganizationsService {
     });
 
     await this.redisService
-      .setInCache(`${cacheKeys.PROJECT}${project.id}`, project)
+      .setInCache(this.makeProjectCacheKey(organizationId, project.id), project)
       .catch((error) => {
         //FIXME: IMPLEMENT PROPER ERROR LOGGING
         console.error('Error caching project in Redis:', error);
