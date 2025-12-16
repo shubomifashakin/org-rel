@@ -14,8 +14,9 @@ export class RedisService
 
   constructor() {
     this.client = createClient({
+      pingInterval: 10,
       url: env.REDIS_URL,
-      name: 'org-rel',
+      name: env.SERVICE_NAME,
     });
   }
 
