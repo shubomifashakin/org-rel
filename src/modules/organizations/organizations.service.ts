@@ -544,7 +544,7 @@ export class OrganizationsService {
       s3Url = await this.uploadToS3(image);
     }
 
-    const project = await this.databaseService.projects.create({
+    const project = (await this.databaseService.projects.create({
       data: {
         name: createProjectDto.name,
         userId: createProjectDto.userId,
@@ -558,7 +558,7 @@ export class OrganizationsService {
         userId: true,
         organizationId: true,
       },
-    });
+    })) satisfies CachedProject;
 
     await this.redisService
       .setInCache(this.makeProjectCacheKey(organizationId, project.id), project)
@@ -587,7 +587,7 @@ export class OrganizationsService {
       return cachedProject;
     }
 
-    const project = await this.databaseService.projects.findUnique({
+    const project = (await this.databaseService.projects.findUnique({
       where: { id: projectId, organizationId },
       select: {
         id: true,
@@ -596,7 +596,7 @@ export class OrganizationsService {
         organizationId: true,
         userId: true,
       },
-    });
+    })) satisfies CachedProject | null;
 
     if (!project) {
       throw new NotFoundException('Project not found');
@@ -624,7 +624,7 @@ export class OrganizationsService {
       s3Url = await this.uploadToS3(image);
     }
 
-    const project = await this.databaseService.projects.update({
+    const project = (await this.databaseService.projects.update({
       where: {
         id: projectId,
         organizationId: orgId,
@@ -641,7 +641,7 @@ export class OrganizationsService {
         userId: true,
         organizationId: true,
       },
-    });
+    })) satisfies CachedProject;
 
     await this.redisService
       .setInCache(this.makeProjectCacheKey(orgId, projectId), project)
