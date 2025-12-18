@@ -12,7 +12,7 @@ import { DatabaseService } from '../../core/database/database.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
-import { UpdateProjectDto } from './dto/updateProject.dto.js';
+import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { cacheKeys } from './utils.js';
 import {

@@ -1,4 +1,5 @@
 import { type Request } from 'express';
+import { seconds, Throttle } from '@nestjs/throttler';
 import {
   Controller,
   Get,
@@ -15,18 +16,20 @@ import {
 } from '@nestjs/common';
 
 import { OrganizationsService } from './organizations.service.js';
-import { CreateOrganizationDto } from './dto/create-organization.dto.js';
-import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
-import { Organizations, Roles } from '../../../generated/prisma/client.js';
-import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
-import { seconds, Throttle } from '@nestjs/throttler';
-import { CreateProjectDto } from './dto/create-project.dto.js';
-import { UpdateProjectDto } from './dto/updateProject.dto.js';
+
 import { ValidateUUID } from './common/decorators/uuid-validator.decorator.js';
 import { GetImage } from './common/decorators/get-file.decorator.js';
-import { Projects } from '../../../generated/prisma/client.js';
+
+import { CreateOrganizationDto } from './dto/create-organization.dto.js';
+import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
+import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
+import { CreateProjectDto } from './dto/create-project.dto.js';
+import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { InviteUserDto } from './dto/invite_user.dto.js';
 import { UpdateInviteDto } from './dto/update-invite.dto.js';
+
+import { Organizations, Roles } from '../../../generated/prisma/client.js';
+import { Projects } from '../../../generated/prisma/client.js';
 
 @Controller('organizations')
 export class OrganizationsController {
