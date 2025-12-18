@@ -10,7 +10,6 @@ export class RedisService
   implements ThrottlerStorage, OnModuleInit, OnModuleDestroy
 {
   private client: RedisClientType;
-  private isConnected = false;
 
   constructor() {
     this.client = createClient({
@@ -43,25 +42,19 @@ export class RedisService
   }
 
   async onModuleInit() {
-    if (!this.isConnected) {
-      await this.client.connect();
-      this.isConnected = true;
+    await this.client.connect();
 
-      this.client.on('error', (err) => {
-        //FIXME: Implement proper error handling
-        console.error('Redis connection error:', err);
-      });
-    }
+    this.client.on('error', (err) => {
+      //FIXME: Implement proper error handling
+      console.error('Redis connection error:', err);
+    });
   }
 
   async onModuleDestroy() {
-    if (this.isConnected) {
-      //FIXME: USE BETTER LOGGING LIB
-      console.log('closing redis connection');
+    //FIXME: USE BETTER LOGGING LIB
+    console.log('closing redis connection');
 
-      await this.client.quit();
-      this.isConnected = false;
-    }
+    await this.client.quit();
   }
 
   async setInCache(key: string, data: any, exp?: number) {

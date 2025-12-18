@@ -41,7 +41,11 @@ import { AuthModule } from './modules/auth/auth.module.js';
             return req?.user?.id || req?.ip || req?.ips?.[0] || 'unknown-ip';
           },
 
-          storage: redisService,
+          storage: {
+            increment(key, ttl, limit, blockDuration) {
+              return redisService.increment(key, ttl, limit, blockDuration);
+            },
+          },
         };
       },
     }),
