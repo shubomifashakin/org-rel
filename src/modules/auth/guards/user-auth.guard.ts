@@ -9,7 +9,7 @@ import { Roles } from '../common/decorators/roles.decorators.js';
 import { Request } from 'express';
 
 @Injectable()
-export class JWTGuard implements CanActivate {
+export class UserAuthGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
