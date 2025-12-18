@@ -1,7 +1,8 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class CreateOrganizationDto {
-  @IsNotEmpty({ message: 'organization name is required' })
+  @IsNotEmpty({ message: 'Organization name is required' })
   @IsString({ message: 'Invalid organization name' })
+  @MinLength(3, { message: 'Organization name is too short' })
   name: string;
 }

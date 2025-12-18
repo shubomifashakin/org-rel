@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsString,
   IsStrongPassword,
+  MinLength,
 } from 'class-validator';
 import { Roles, Users } from '../../../../generated/prisma/client.js';
 
@@ -14,6 +15,7 @@ export class CreateUserDto implements Pick<
 > {
   @IsNotEmpty({ message: 'name is required' })
   @IsString({ message: 'Invalid name' })
+  @MinLength(3, { message: 'Fullname must be at least 3 characters long' })
   fullname: string;
 
   @IsEmail()
@@ -21,6 +23,7 @@ export class CreateUserDto implements Pick<
 
   @IsString({ message: 'Invalid username' })
   @IsNotEmpty({ message: 'username is required' })
+  @MinLength(3, { message: 'Username must be at least 3 characters long' })
   username: string;
 
   @IsStrongPassword(
