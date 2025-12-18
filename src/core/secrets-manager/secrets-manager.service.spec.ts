@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { SecretsManagerService } from './secrets-manager.service';
+import { SecretsManagerService } from './secrets-manager.service.js';
 
 describe('SecretsManagerService', () => {
   let service: SecretsManagerService;
