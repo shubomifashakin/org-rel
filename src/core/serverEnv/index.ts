@@ -10,6 +10,8 @@ const env = {
   REDIS_URL: process.env.REDIS_URL!,
   SERVICE_NAME: process.env.SERVICE_NAME!,
   AWS_REGION: process.env.AWS_REGION!,
+  JWT_SECRET_NAME: process.env.JWT_SECRET_NAME!,
+  CLIENT_DOMAIN: process.env.CLIENT_DOMAIN!,
 };
 
 export default env;

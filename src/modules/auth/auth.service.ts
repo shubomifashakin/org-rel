@@ -1,36 +1,77 @@
+import { JWTPayload } from 'jose';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
-import { DatabaseService } from '../../core/database/database.service.js';
 import { SignUpDto } from './common/dtos/sign-up.dto.js';
-import { hashPassword } from '../../common/utils/fns.js';
+import { generateJwt, hashPassword } from '../../common/utils/fns.js';
+
+import env from '../../core/serverEnv/index.js';
+import { DatabaseService } from '../../core/database/database.service.js';
+import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly secretsManagerService: SecretsManagerService,
+  ) {}
+
+  private async generateJwt(claims: JWTPayload) {
+    const getJwtSecret = await this.secretsManagerService.send(
+      new GetSecretValueCommand({
+        SecretId: env.JWT_SECRET_NAME,
+      }),
+    );
+
+    if (!getJwtSecret.SecretString) {
+      throw new InternalServerErrorException('Something went wrong');
+    }
+
+    const jwtSecret = getJwtSecret.SecretString;
+
+    const jwt = await generateJwt(jwtSecret, claims);
+
+    if (!jwt.status) {
+      //FIXME: USE BETTER LOGGER IMPLEMENTATION
+      console.error('Failed to generate jwt', jwt.error);
+
+      throw new InternalServerErrorException('Something went wrong');
+    }
+
+    return jwt.data;
+  }
 
   async signUp(signUpDto: SignUpDto) {
     //FIXME: HASH THE PASSWORD
     const { status, data, error } = await hashPassword(signUpDto.password);
 
     if (!status) {
-      //FIXME: USE A BETTER ERROR LOGGER
+      //FIXME: USE A BETTER LOGGER IMPLEMENTATIO
       console.error(error);
+
       throw new InternalServerErrorException('Something went wrong');
     }
 
-    await this.databaseService.users.create({
+    const userData = await this.databaseService.users.create({
       data: {
         password: data,
         email: signUpDto.email,
         fullname: signUpDto.fullname,
         username: signUpDto.username,
       },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      },
     });
 
-    //FIXME: GENERATE JWT TO USE AS A SESSION
-    //generate jwt to use as a session
+    const jwt = await this.generateJwt({
+      sub: userData.id,
+      email: userData.email,
+    });
 
-    return { message: 'success' };
+    return { message: 'success', jwt };
   }
 
   async logOut() {

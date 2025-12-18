@@ -1,4 +1,6 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { type Response } from 'express';
+import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
+
 import { UserAuthGuard } from './guards/user-auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { SignUpDto } from './common/dtos/sign-up.dto.js';
@@ -8,8 +10,17 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('sign-up')
-  signUp(@Body() signUpDto: SignUpDto) {
-    return this.authService.signUp(signUpDto);
+  async signUp(@Body() signUpDto: SignUpDto, @Res() response: Response) {
+    const res = await this.authService.signUp(signUpDto);
+
+    response.cookie('auth_token', res.jwt, {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    return { message: 'success' };
   }
 
   @UseGuards(UserAuthGuard)
