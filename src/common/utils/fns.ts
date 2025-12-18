@@ -31,13 +31,13 @@ export async function hashPassword(password: string): Promise<FnResult> {
 
 export async function generateJwt(
   jwtSecret: string,
-  claims: jose.JWTPayload,
+  payload: jose.JWTPayload,
   exp = '5m',
 ): Promise<FnResult> {
   try {
     const secret = new TextEncoder().encode(jwtSecret);
 
-    const jwt = await new jose.SignJWT(claims)
+    const jwt = await new jose.SignJWT(payload)
       .setProtectedHeader({
         alg: 'HS256',
       })
@@ -54,5 +54,42 @@ export async function generateJwt(
     }
 
     return { status: false, data: null, error: 'Failed to generate JWT' };
+  }
+}
+
+export async function verifyJwt(
+  jwt: string,
+  secret: string,
+  options?: jose.JWTVerifyOptions,
+): Promise<
+  | { status: true; data: jose.JWTPayload; error: null }
+  | { status: false; data: null; error: string }
+> {
+  try {
+    const { payload } = await jose.jwtVerify(
+      jwt,
+      new TextEncoder().encode(secret),
+      {
+        issuer: env.SERVICE_NAME,
+        audience: env.CLIENT_DOMAIN,
+        ...options,
+      },
+    );
+
+    return { status: true, data: payload, error: null };
+  } catch (error: unknown) {
+    if (error instanceof jose.errors.JWTExpired) {
+      return { status: false, data: null, error: 'Token has expired' };
+    }
+    if (error instanceof jose.errors.JWTClaimValidationFailed) {
+      return { status: false, data: null, error: 'Invalid token claims' };
+    }
+    if (error instanceof jose.errors.JWSInvalid) {
+      return { status: false, data: null, error: 'Invalid JWT format' };
+    }
+    if (error instanceof Error) {
+      return { status: false, data: null, error: error.message };
+    }
+    return { status: false, data: null, error: 'Failed to verify JWT' };
   }
 }
