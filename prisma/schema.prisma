@@ -18,6 +18,12 @@ enum Roles {
   USER
 }
 
+enum InviteStatus {
+  ACCEPTED
+  PENDING
+  REJECTED
+}
+
 model Organizations {
   id        String     @id @default(uuid())
   name      String
@@ -86,11 +92,13 @@ model Invites {
 
   expiresAt DateTime
 
+  status InviteStatus @default(PENDING)
+
   organizationId String
   organization   Organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  invitedByUserId String
-  invitedBy       Users  @relation(fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  invitedByUserId String?
+  invitedBy       Users?  @relation(fields: [invitedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([organizationId, email])
 }

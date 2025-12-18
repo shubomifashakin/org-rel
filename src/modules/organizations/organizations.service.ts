@@ -21,6 +21,7 @@ import {
   Roles,
 } from '../../../generated/prisma/client.js';
 import { InviteUserDto } from './dto/invite_user.dto.js';
+import { UpdateInviteDto } from './dto/update-invite.dto.js';
 
 type CachedUser = {
   id: string;
@@ -312,11 +313,11 @@ export class OrganizationsService {
     console.log(invitedUsersEmail, invitedUsersRole);
   }
 
-  async getAllInvites(id: string, next?: string) {
+  async getAllInvites(organizationId: string, next?: string) {
     const limit = 10;
     const invites = await this.databaseService.invites.findMany({
       where: {
-        organizationId: id,
+        organizationId,
       },
       select: {
         id: true,
@@ -344,6 +345,24 @@ export class OrganizationsService {
       hasNextPage,
       ...(cursor && { cursor }),
     };
+  }
+
+  async updateInvite(
+    organizationId: string,
+    inviteId: string,
+    updateInvite: UpdateInviteDto,
+  ) {
+    await this.databaseService.invites.update({
+      where: {
+        id: inviteId,
+        organizationId,
+      },
+      data: {
+        status: updateInvite.status,
+      },
+    });
+
+    return { message: 'status' };
   }
 
   async getOneOrgUser(

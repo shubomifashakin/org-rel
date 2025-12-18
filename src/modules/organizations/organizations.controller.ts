@@ -26,6 +26,7 @@ import { ValidateUUID } from './common/decorators/uuid-validator.decorator.js';
 import { GetImage } from './common/decorators/get-file.decorator.js';
 import { Projects } from '../../../generated/prisma/client.js';
 import { InviteUserDto } from './dto/invite_user.dto.js';
+import { UpdateInviteDto } from './dto/update-invite.dto.js';
 
 @Controller('organizations')
 export class OrganizationsController {
@@ -115,6 +116,21 @@ export class OrganizationsController {
   ) {
     return this.organizationsService.getAllInvites(id, next);
   }
+
+  @Post(':id/users/invites/:inviteId')
+  updateInvite(
+    @ValidateUUID('id', 'Invalid organization id') orgId: string,
+    @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
+    @Body() updateInviteDto: UpdateInviteDto,
+  ) {
+    return this.organizationsService.updateInvite(
+      orgId,
+      inviteId,
+      updateInviteDto,
+    );
+  }
+
+  //USERS / USERID
 
   @Get(':id/users/:userId') //get a user in an org
   getOneOrgUser(
