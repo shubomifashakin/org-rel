@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuid } from 'uuid';
 
@@ -82,6 +86,10 @@ export class OrganizationsService {
     userId: string,
     image?: Express.Multer.File,
   ) {
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
     let s3Url: string | undefined = undefined;
 
     if (image) {
@@ -142,14 +150,16 @@ export class OrganizationsService {
       throw new NotFoundException('Organization not found');
     }
 
+    const cachedOrg = organization satisfies CachedOrg;
+
     await this.redisService
-      .setInCache(this.makeOrganizationCacheKey(id), organization)
+      .setInCache(this.makeOrganizationCacheKey(id), cachedOrg)
       .catch((error) => {
         //FIXME: IMPLEMENT PROPER ERROR LOGGING
         console.error('Error caching organization in Redis:', error);
       });
 
-    return organization;
+    return cachedOrg;
   }
 
   async updateOneOrganization(
@@ -163,7 +173,7 @@ export class OrganizationsService {
       s3Url = await this.uploadToS3(image);
     }
 
-    const org = await this.databaseService.organizations.update({
+    const org = (await this.databaseService.organizations.update({
       where: { id },
       data: {
         image: s3Url,
@@ -174,7 +184,7 @@ export class OrganizationsService {
         name: true,
         image: true,
       },
-    });
+    })) satisfies CachedOrg;
 
     await this.redisService
       .setInCache(this.makeOrganizationCacheKey(id), org)

@@ -1,3 +1,4 @@
+import { type Request } from 'express';
 import {
   Controller,
   Get,
@@ -10,6 +11,7 @@ import {
   ParseUUIDPipe,
   HttpCode,
   UploadedFiles,
+  Req,
 } from '@nestjs/common';
 
 import { OrganizationsService } from './organizations.service.js';
@@ -33,11 +35,12 @@ export class OrganizationsController {
   @GetImage()
   createOrganization(
     @Body() createOrganizationDto: CreateOrganizationDto,
+    @Req() request: Request,
     @UploadedFiles() image?: Express.Multer.File,
   ) {
     return this.organizationsService.createOrganization(
       createOrganizationDto,
-      '', //FIXME: SHOULD BE THE USER ID
+      request.user.id,
       image,
     );
   }
