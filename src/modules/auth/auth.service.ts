@@ -24,12 +24,16 @@ export class AuthService {
     );
 
     if (!getJwtSecret.SecretString) {
+      console.log('failed to get secret from secrets manager');
+
       throw new InternalServerErrorException('Something went wrong');
     }
 
-    const jwtSecret = getJwtSecret.SecretString;
+    const jwtSecret = JSON.parse(getJwtSecret.SecretString) as {
+      JWT_SECRET: string;
+    };
 
-    const jwt = await generateJwt(jwtSecret, claims);
+    const jwt = await generateJwt(jwtSecret.JWT_SECRET, claims);
 
     if (!jwt.status) {
       //FIXME: USE BETTER LOGGER IMPLEMENTATION
@@ -42,7 +46,6 @@ export class AuthService {
   }
 
   async signUp(signUpDto: SignUpDto) {
-    //FIXME: HASH THE PASSWORD
     const { status, data, error } = await hashPassword(signUpDto.password);
 
     if (!status) {

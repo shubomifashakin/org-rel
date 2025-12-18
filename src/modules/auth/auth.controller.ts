@@ -20,7 +20,7 @@ export class AuthController {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return { message: 'success' };
+    return response.status(200).json({ message: 'success' });
   }
 
   @UseGuards(UserAuthGuard)
