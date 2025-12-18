@@ -13,8 +13,8 @@ import {
 import { UserAuthGuard } from './guards/user-auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { SignUpDto } from './common/dtos/sign-up.dto.js';
-import { DAYS_14_MS, MINUTES_10_MS } from '../../common/utils/constants.js';
 import { UserAgent } from '../../common/decorators/user-agent.decorator.js';
+import { TOKEN } from './common/utils/constants.js';
 
 @Controller('auth')
 export class AuthController {
@@ -30,18 +30,18 @@ export class AuthController {
   ) {
     const res = await this.authService.signUp(signUpDto, ipAddr, userAgent);
 
-    response.cookie('refresh_token', res.tokens.refreshToken, {
+    response.cookie(TOKEN.REFRESH.TYPE, res.tokens.refreshToken, {
       secure: true,
       httpOnly: true,
       sameSite: 'strict',
-      maxAge: DAYS_14_MS,
+      maxAge: TOKEN.REFRESH.EXPIRATION_MS,
     });
 
-    response.cookie('auth_token', res.tokens.accessToken, {
+    response.cookie(TOKEN.ACCESS.TYPE, res.tokens.accessToken, {
       secure: true,
       httpOnly: true,
       sameSite: 'strict',
-      maxAge: MINUTES_10_MS,
+      maxAge: TOKEN.ACCESS.EXPIRATION_MS,
     });
 
     return response.status(200).json({ message: 'success' });
@@ -51,10 +51,13 @@ export class AuthController {
   @Post('logout')
   logOut(@Req() req: Request, @Res({ passthrough: true }) response: Response) {
     const userId = req.user.id;
-    const refreshToken = req.cookies?.['refresh_token'] as string | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const refreshToken = req.cookies?.[TOKEN.REFRESH.TYPE] as
+      | string
+      | undefined;
 
-    response.clearCookie('refresh_token');
-    response.clearCookie('auth_token');
+    response.clearCookie(TOKEN.REFRESH.TYPE);
+    response.clearCookie(TOKEN.ACCESS.TYPE);
 
     return this.authService.logOut(userId, refreshToken);
   }

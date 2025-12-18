@@ -4,7 +4,8 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { type Request } from 'express';
+import { TOKEN } from '../common/utils/constants.js';
 
 @Injectable()
 export class UserAuthGuard implements CanActivate {
@@ -12,10 +13,16 @@ export class UserAuthGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const accessToken = request.cookies?.[TOKEN.ACCESS.TYPE] as
+      | string
+      | undefined;
 
-    if (!request.user) {
+    if (!accessToken) {
       throw new UnauthorizedException('Unauthorized');
     }
+
+    //FIXME: EXTRACT THE CLAIMS AND APPEND THE SUB TO THE REQUEST
 
     return true;
   }

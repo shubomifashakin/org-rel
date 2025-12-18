@@ -14,17 +14,7 @@ import { DatabaseService } from '../../core/database/database.service.js';
 import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
 import { DAYS_14_MS } from '../../common/utils/constants.js';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-
-const TOKEN = {
-  ACCESS: {
-    TYPE: 'access' as const,
-    EXPIRATION: '10m',
-  },
-  REFRESH: {
-    TYPE: 'refresh' as const,
-    EXPIRATION: '14d',
-  },
-} as const;
+import { TOKEN } from './common/utils/constants.js';
 
 @Injectable()
 export class AuthService {
