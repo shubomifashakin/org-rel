@@ -32,6 +32,7 @@ export async function hashPassword(password: string): Promise<FnResult> {
 export async function generateJwt(
   jwtSecret: string,
   claims: jose.JWTPayload,
+  exp = '5m',
 ): Promise<FnResult> {
   try {
     const secret = new TextEncoder().encode(jwtSecret);
@@ -43,7 +44,7 @@ export async function generateJwt(
       .setIssuedAt()
       .setIssuer(env.SERVICE_NAME)
       .setAudience(env.CLIENT_DOMAIN)
-      .setExpirationTime('5m')
+      .setExpirationTime(exp)
       .sign(secret);
 
     return { status: true, data: jwt, error: null };
