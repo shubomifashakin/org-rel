@@ -20,6 +20,7 @@ import {
   Projects,
   Roles,
 } from '../../../generated/prisma/client.js';
+import { InviteUserDto } from './dto/invite_user.dto.js';
 
 type CachedUser = {
   id: string;
@@ -264,6 +265,42 @@ export class OrganizationsService {
       hasNextPage: users.length > limit,
       ...(cursor && { cursor }),
     };
+  }
+
+  async inviteOneUser(
+    userId: string,
+    organizationId: string,
+    inviteUserDto: InviteUserDto,
+  ) {
+    const usersName = await this.databaseService.users.findUnique({
+      where: { id: userId },
+      select: { fullname: true },
+    });
+
+    if (!usersName) {
+      throw new NotFoundException('User Not Found');
+    }
+
+    const organizationName =
+      await this.databaseService.organizations.findUnique({
+        where: {
+          id: organizationId,
+        },
+        select: {
+          name: true,
+        },
+      });
+
+    if (!organizationName) {
+      throw new NotFoundException('Organization Not Found');
+    }
+
+    const invitedUsersEmail = inviteUserDto.email;
+    const invitedUsersRole = inviteUserDto.role;
+
+    //FIXME: SEND A MAIL TO THE INVITED USER
+    //send a mail to the user stating the role they are being invited for and the person inviting them
+    console.log(invitedUsersEmail, invitedUsersRole);
   }
 
   async getOneOrgUser(
