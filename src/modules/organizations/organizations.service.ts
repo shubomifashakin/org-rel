@@ -506,7 +506,7 @@ export class OrganizationsService {
   }
 
   //PROJECTS
-  async getOrgProjects(id: string, next?: string) {
+  async getAllOrgProjects(id: string, next?: string) {
     const limit = 10;
     const projects = await this.databaseService.projects.findMany({
       where: { organizationId: id },

@@ -175,7 +175,7 @@ export class OrganizationsController {
     hasNextPage: boolean;
     cursor?: string;
   }> {
-    return this.organizationsService.getOrgProjects(organizationId, next);
+    return this.organizationsService.getAllOrgProjects(organizationId, next);
   }
 
   @Throttle({ default: { limit: 5, ttl: seconds(10) } })
