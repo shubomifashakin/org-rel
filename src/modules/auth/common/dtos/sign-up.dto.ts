@@ -1,13 +1,11 @@
 import {
-  IsDefined,
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsString,
   IsStrongPassword,
   MinLength,
 } from 'class-validator';
-import { Roles, Users } from '../../../../../generated/prisma/client.js';
+import { Users } from '../../../../../generated/prisma/client.js';
 
 export class SignUpDto implements Pick<
   Users,
@@ -40,8 +38,4 @@ export class SignUpDto implements Pick<
     },
   )
   password: string;
-
-  @IsDefined({ message: 'users role must be specified' })
-  @IsEnum(Roles, { message: 'Invalid role' })
-  role: Roles;
 }
