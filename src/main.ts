@@ -13,7 +13,7 @@ async function bootstrap() {
     // logger: true,
   });
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', { exclude: ['health'] });
   app.use(compression());
   app.use(cookieParser());
 
