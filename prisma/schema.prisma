@@ -26,7 +26,8 @@ model Organizations {
   updatedAt DateTime   @default(now()) @updatedAt
   projects  Projects[]
 
-  users OrganizationsOnUsers[]
+  invites Invites[]
+  users   OrganizationsOnUsers[]
 }
 
 model Users {
@@ -42,6 +43,7 @@ model Users {
 
   projects      Projects[]
   sessions      Sessions[]
+  invites       Invites[]
   organizations OrganizationsOnUsers[]
 }
 
@@ -73,6 +75,24 @@ model OrganizationsOnUsers {
   @@unique([organizationId, userId])
   @@index([userId])
   @@index([organizationId])
+}
+
+model Invites {
+  id    String @id @default(uuid())
+  email String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  expiresAt DateTime
+
+  organizationId String
+  organization   Organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  invitedByUserId String
+  invitedBy       Users  @relation(fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
 }
 
 model Sessions {

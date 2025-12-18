@@ -298,9 +298,52 @@ export class OrganizationsService {
     const invitedUsersEmail = inviteUserDto.email;
     const invitedUsersRole = inviteUserDto.role;
 
+    await this.databaseService.invites.create({
+      data: {
+        organizationId,
+        email: invitedUsersEmail,
+        invitedByUserId: userId,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+      },
+    });
+
     //FIXME: SEND A MAIL TO THE INVITED USER
     //send a mail to the user stating the role they are being invited for and the person inviting them
     console.log(invitedUsersEmail, invitedUsersRole);
+  }
+
+  async getAllInvites(id: string, next?: string) {
+    const limit = 10;
+    const invites = await this.databaseService.invites.findMany({
+      where: {
+        organizationId: id,
+      },
+      select: {
+        id: true,
+        email: true,
+        expiresAt: true,
+        createdAt: true,
+        updatedAt: true,
+        invitedByUserId: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+      cursor: next
+        ? {
+            id: next,
+          }
+        : undefined,
+    });
+
+    const hasNextPage = invites.length > limit;
+    const items = invites.slice(0, limit);
+    const cursor = invites[invites.length - 1]?.id;
+
+    return {
+      invites: items,
+      hasNextPage,
+      ...(cursor && { cursor }),
+    };
   }
 
   async getOneOrgUser(

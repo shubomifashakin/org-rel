@@ -108,6 +108,14 @@ export class OrganizationsController {
     );
   }
 
+  @Get(':id/users/invites')
+  getAllInvites(
+    @ValidateUUID('id', 'Invalid organization id') id: string,
+    @Query('next', ParseUUIDPipe) next?: string,
+  ) {
+    return this.organizationsService.getAllInvites(id, next);
+  }
+
   @Get(':id/users/:userId') //get a user in an org
   getOneOrgUser(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
