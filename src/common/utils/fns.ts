@@ -43,7 +43,7 @@ export async function generateJwt(
       .setIssuedAt()
       .setIssuer(env.SERVICE_NAME)
       .setAudience(env.CLIENT_DOMAIN)
-      .setExpirationTime('10m')
+      .setExpirationTime('5m')
       .sign(secret);
 
     return { status: true, data: jwt, error: null };
