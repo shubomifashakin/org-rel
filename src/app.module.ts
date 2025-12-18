@@ -22,6 +22,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
   imports: [
     OrganizationsModule,
     DatabaseModule,
+    RedisModule,
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [RedisService],

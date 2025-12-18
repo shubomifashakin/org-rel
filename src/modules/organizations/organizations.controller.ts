@@ -5,22 +5,18 @@ import {
   Body,
   Patch,
   Delete,
-  UseInterceptors,
   UploadedFile,
-  BadRequestException,
   Query,
   ParseUUIDPipe,
   HttpCode,
   UploadedFiles,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 import { OrganizationsService } from './organizations.service.js';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
-import { Organizations, Users } from '../../../generated/prisma/client.js';
-import { CreateUserDto } from './dto/create-user.dto.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
+import { Organizations, Roles } from '../../../generated/prisma/client.js';
+import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
 import { seconds, Throttle } from '@nestjs/throttler';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/updateProject.dto.js';
@@ -34,44 +30,16 @@ export class OrganizationsController {
 
   @Post() //create an organization
   @HttpCode(200)
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'orgImage', maxCount: 1 },
-        { name: 'userImage', maxCount: 1 },
-      ],
-      {
-        fileFilter: (_, file, cb) => {
-          if (!file.mimetype.match(/(jpg|jpeg|png)$/)) {
-            return cb(
-              new BadRequestException(
-                'Only img, png and jpeg files are allowed',
-              ),
-              false,
-            );
-          }
-          cb(null, true);
-        },
-      },
-    ),
-  )
+  @GetImage()
   createOrganization(
     @Body() createOrganizationDto: CreateOrganizationDto,
-    @UploadedFiles() images?: Express.Multer.File[],
+    @UploadedFiles() image?: Express.Multer.File,
   ) {
     return this.organizationsService.createOrganization(
       createOrganizationDto,
-      images,
+      '', //FIXME: SHOULD BE THE USER ID
+      image,
     );
-  }
-
-  @Get() //get all orgs
-  getOrganizations(@Query('next', ParseUUIDPipe) next?: string): Promise<{
-    organizations: Pick<Organizations, 'id' | 'name' | 'image'>[];
-    hasNextPage: boolean;
-    cursor?: string;
-  }> {
-    return this.organizationsService.getOrganizations(next);
   }
 
   @Get(':id') //get a particular org
@@ -103,31 +71,21 @@ export class OrganizationsController {
   }
 
   //USERS
-  @Post(':id/users') //create a user in an org
-  @GetImage()
-  createOrgUser(
-    @Body() createUserDto: CreateUserDto,
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
-    @UploadedFile() file?: Express.Multer.File,
-  ): Promise<{ message: string }> {
-    return this.organizationsService.createOrgUser(
-      organizationId,
-      createUserDto,
-      file,
-    );
-  }
-
   @Get(':id/users') //get all the users in an org
   getOrgUsers(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @Query('next', ParseUUIDPipe) next?: string,
   ): Promise<{
-    users: Pick<
-      Users,
-      'id' | 'email' | 'fullname' | 'image' | 'organizationId' | 'username'
-    >[];
-    hasNextPage: boolean;
     cursor?: string;
+    hasNextPage: boolean;
+    users: Array<{
+      role: Roles;
+      id: string;
+      image: string | null;
+      email: string;
+      username: string;
+      fullname: string;
+    }>;
   }> {
     return this.organizationsService.getOrgUsers(organizationId, next);
   }
@@ -136,28 +94,20 @@ export class OrganizationsController {
   getOneOrgUser(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @ValidateUUID('userId', 'Invalid user id') userId: string,
-  ): Promise<
-    Pick<
-      Users,
-      'id' | 'email' | 'fullname' | 'image' | 'organizationId' | 'username'
-    >
-  > {
+  ) {
     return this.organizationsService.getOneOrgUser(organizationId, userId);
   }
 
   @Patch(':id/users/:userId') //update a user in an org
-  @GetImage()
   updateOneOrgUser(
     @ValidateUUID('id', 'Invalid organization id') organizationId: string,
     @ValidateUUID('userId', 'Invalid user id') userId: string,
-    @Body() updateUserDto: UpdateUserDto,
-    @UploadedFile() image?: Express.Multer.File,
+    @Body() updateOrgUserDto: UpdateOrgUserDto,
   ): Promise<{ message: string }> {
     return this.organizationsService.updateOneOrgUser(
       organizationId,
       userId,
-      updateUserDto,
-      image,
+      updateOrgUserDto,
     );
   }
 

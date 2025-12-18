@@ -5,9 +5,8 @@ import { v4 as uuid } from 'uuid';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 import { DatabaseService } from '../../core/database/database.service.js';
-import { CreateUserDto } from './dto/create-user.dto.js';
 import { S3Service } from '../../core/s3/s3.service.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
+import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/updateProject.dto.js';
 import { RedisService } from '../../core/redis/redis.service.js';
@@ -15,13 +14,17 @@ import { cacheKeys } from './utils.js';
 import {
   Organizations,
   Projects,
-  Users,
+  Roles,
 } from '../../../generated/prisma/client.js';
 
-type CachedUser = Pick<
-  Users,
-  'id' | 'email' | 'fullname' | 'image' | 'username' | 'organizationId'
->;
+type CachedUser = {
+  id: string;
+  email: string;
+  fullname: string;
+  image: string | null;
+  username: string;
+  role: Roles;
+};
 
 type CachedProject = Pick<
   Projects,
@@ -76,20 +79,13 @@ export class OrganizationsService {
 
   async createOrganization(
     createOrganizationDto: CreateOrganizationDto,
-    images?: Express.Multer.File[],
+    userId: string,
+    image?: Express.Multer.File,
   ) {
     let s3Url: string | undefined = undefined;
-    let userImageUrl: string | undefined = undefined;
 
-    const orgImage = images?.find((image) => image.fieldname === 'orgImage');
-    const userImage = images?.find((image) => image.fieldname === 'userImage');
-
-    if (orgImage) {
-      s3Url = await this.uploadToS3(orgImage);
-    }
-
-    if (userImage) {
-      userImageUrl = await this.uploadToS3(userImage);
+    if (image) {
+      s3Url = await this.uploadToS3(image);
     }
 
     const org = await this.databaseService.organizations.create({
@@ -98,12 +94,8 @@ export class OrganizationsService {
         image: s3Url,
         users: {
           create: {
+            userId,
             role: 'ADMIN',
-            image: userImageUrl,
-            email: createOrganizationDto.user.email,
-            fullname: createOrganizationDto.user.fullname,
-            username: createOrganizationDto.user.username,
-            password: createOrganizationDto.user.password,
           },
         },
       },
@@ -122,29 +114,6 @@ export class OrganizationsService {
       });
 
     return { message: 'Success' };
-  }
-
-  async getOrganizations(next?: string) {
-    const orgs = await this.databaseService.organizations.findMany({
-      select: {
-        id: true,
-        name: true,
-        image: true,
-      },
-      take: 10 + 1,
-      ...(next && { cursor: { id: next } }),
-      orderBy: {
-        id: 'desc',
-        createdAt: 'desc',
-      },
-    });
-
-    const cursor = orgs[orgs.length - 1]?.id;
-    return {
-      organizations: orgs.slice(0, 10),
-      hasNextPage: orgs.length > 10,
-      ...(cursor && { cursor }),
-    };
   }
 
   async getOneOrganization(id: string) {
@@ -243,84 +212,59 @@ export class OrganizationsService {
   }
 
   // USERs
-  async createOrgUser(
-    organizationId: string,
-    createUserDto: CreateUserDto,
-    image?: Express.Multer.File,
-  ) {
-    let s3Url: string | undefined = undefined;
-
-    if (image) {
-      s3Url = await this.uploadToS3(image);
-    }
-
-    const user = await this.databaseService.users.create({
-      data: {
-        image: s3Url,
-        fullname: createUserDto.fullname,
-        email: createUserDto.email,
-        organizationId: organizationId,
-        username: createUserDto.username,
-        role: createUserDto.role,
-        password: createUserDto.password,
-      },
-      select: {
-        id: true,
-        email: true,
-        fullname: true,
-        image: true,
-        username: true,
-        organizationId: true,
-      },
-    });
-
-    await this.redisService
-      .setInCache(this.makeUserCacheKey(organizationId, user.id), user)
-      .catch((error) => {
-        //FIXME:
-        console.error('Error setting user in cache:', error);
-        return null;
-      });
-
-    return { message: 'Success' };
-  }
-
   async getOrgUsers(organizationId: string, next?: string) {
     const limit = 10;
-    const users = await this.databaseService.users.findMany({
+
+    const users = await this.databaseService.organizationsOnUsers.findMany({
       where: {
         organizationId,
       },
       select: {
-        id: true,
-        email: true,
-        fullname: true,
-        image: true,
-        username: true,
-        organizationId: true,
+        role: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            image: true,
+            username: true,
+            fullname: true,
+          },
+        },
       },
       take: limit + 1,
-      ...(next && { cursor: { id: next } }),
-      orderBy: {
-        id: 'desc',
-        createdAt: 'desc',
-      },
+      cursor: next
+        ? {
+            organizationId_userId: {
+              userId: next,
+              organizationId: organizationId,
+            },
+          }
+        : undefined,
     });
 
-    const cursor = users[users.length - 1]?.id;
+    const cursor = users[users.length - 1]?.user.id;
+    const validUsers = users.slice(0, limit);
+    const allUsers = validUsers.map((user) => ({
+      ...user.user,
+      role: user.role,
+    }));
+
     return {
-      users: users.slice(0, limit),
+      users: allUsers,
       hasNextPage: users.length > limit,
       ...(cursor && { cursor }),
     };
   }
 
-  async getOneOrgUser(organizationId: string, userId: string) {
+  async getOneOrgUser(
+    organizationId: string,
+    userId: string,
+  ): Promise<CachedUser> {
     const cache = await this.redisService
       .getFromCache<CachedUser>(this.makeUserCacheKey(organizationId, userId))
       .catch((error) => {
         //FIXME:
-        console.error('Error fetching user from cache:', error);
+        console.error('Error fetching organization user from cache:', error);
         return null;
       });
 
@@ -328,18 +272,24 @@ export class OrganizationsService {
       return cache;
     }
 
-    const user = await this.databaseService.users.findUnique({
+    const user = await this.databaseService.organizationsOnUsers.findUnique({
       where: {
-        id: userId,
-        organizationId,
+        organizationId_userId: {
+          userId,
+          organizationId,
+        },
       },
       select: {
-        id: true,
-        email: true,
-        fullname: true,
-        image: true,
-        username: true,
-        organizationId: true,
+        user: {
+          select: {
+            id: true,
+            image: true,
+            email: true,
+            fullname: true,
+            username: true,
+          },
+        },
+        role: true,
       },
     });
 
@@ -347,85 +297,99 @@ export class OrganizationsService {
       throw new NotFoundException('user does not exist');
     }
 
+    const userInfo = user.user;
+    const userRole = user.role;
+
+    const cachedUser = {
+      ...userInfo,
+      role: userRole,
+    } satisfies CachedUser;
+
     await this.redisService
-      .setInCache(`${cacheKeys.USER}${userId}`, user)
+      .setInCache(this.makeUserCacheKey(organizationId, userId), cachedUser)
       .catch((error) => {
         //FIXME:
-        console.error('Error fetching user from cache:', error);
+        console.error('Error setting organization user in cache:', error);
         return null;
       });
 
-    return user;
+    return cachedUser;
   }
 
   async updateOneOrgUser(
-    orgId: string,
+    organizationId: string,
     userId: string,
-    updateUserDto: UpdateUserDto,
-    image?: Express.Multer.File,
+    updateOrgUserDto: UpdateOrgUserDto,
   ) {
-    let s3Url: string | undefined = undefined;
-
-    if (image) {
-      s3Url = await this.uploadToS3(image);
-    }
-
-    const user = await this.databaseService.users.update({
+    const user = await this.databaseService.organizationsOnUsers.update({
       where: {
-        id: userId,
-        organizationId: orgId,
+        organizationId_userId: {
+          userId,
+          organizationId,
+        },
       },
       data: {
-        image: s3Url,
-        fullname: updateUserDto?.fullname,
-        email: updateUserDto?.email,
-        username: updateUserDto?.username,
+        role: updateOrgUserDto.role,
       },
       select: {
-        id: true,
-        email: true,
-        fullname: true,
-        username: true,
-        image: true,
-        organizationId: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            image: true,
+            fullname: true,
+            username: true,
+          },
+        },
+        role: true,
       },
     });
 
+    const updatedUser = {
+      ...user.user,
+      role: user.role,
+    } satisfies CachedUser;
+
     await this.redisService
-      .setInCache(this.makeUserCacheKey(orgId, userId), user)
+      .setInCache(this.makeUserCacheKey(organizationId, userId), updatedUser)
       .catch((error) => {
         //FIXME:
-        console.error('Error updating user in cache:', error);
+        console.error('Error updating organization user in cache:', error);
         return null;
       });
 
     return { message: 'Success' };
   }
 
-  async deleteOneOrgUser(orgId: string, userId: string) {
-    const userExist = await this.databaseService.users.findUnique({
-      where: {
-        id: userId,
-        organizationId: orgId,
-      },
-    });
+  async deleteOneOrgUser(organizationId: string, userId: string) {
+    const userExist =
+      await this.databaseService.organizationsOnUsers.findUnique({
+        where: {
+          organizationId_userId: {
+            userId,
+            organizationId,
+          },
+        },
+      });
 
     if (!userExist) {
       return { message: 'Success' };
     }
 
-    await this.databaseService.users.delete({
+    await this.databaseService.organizationsOnUsers.delete({
       where: {
-        id: userId,
-        organizationId: orgId,
+        organizationId_userId: {
+          userId,
+          organizationId,
+        },
       },
     });
 
     await this.redisService
-      .deleteFromCache(this.makeUserCacheKey(orgId, userId))
+      .deleteFromCache(this.makeUserCacheKey(organizationId, userId))
       .catch((error) => {
         //FIXME:
-        console.error('Error deleting user from cache:', error);
+        console.error('Error deleting organization user from cache:', error);
         return null;
       });
 
