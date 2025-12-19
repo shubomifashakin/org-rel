@@ -6,6 +6,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
@@ -16,6 +17,7 @@ import {
   compareHashedString,
   generateJwt,
   hashString,
+  verifyJwt,
 } from '../../common/utils/fns.js';
 
 import env from '../../core/serverEnv/index.js';
@@ -208,10 +210,42 @@ export class AuthService {
       return { message: 'success' };
     }
 
+    //FIXME: CACHE OR SOMETHING
+    const secret = await this.secretsManagerService.send(
+      new GetSecretValueCommand({
+        SecretId: process.env.JWT_SECRET_NAME,
+      }),
+    );
+
+    if (!secret.SecretString) {
+      throw new InternalServerErrorException('Internal Server Error');
+    }
+
+    const jwtSecret = JSON.parse(secret.SecretString) as {
+      JWT_SECRET: string;
+    };
+
+    const { status, error, data } = await verifyJwt(
+      refreshToken,
+      jwtSecret.JWT_SECRET,
+    );
+
+    if (!status) {
+      //FIXME:
+      console.error('logout error', error);
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    const tokenId = data?.tokenId as string;
+
+    if (!tokenId) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
     const sessionExists = await this.databaseService.refreshTokens.findUnique({
       where: {
         userId,
-        token: refreshToken,
+        id: tokenId,
       },
       select: {
         id: true,
