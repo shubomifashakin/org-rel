@@ -63,6 +63,7 @@ export class AuthController {
     return this.authService.logOut(userId, refreshToken);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 15 } })
   @Post('sign-in')
   async signIn(
     @Body() body: SignInDto,
