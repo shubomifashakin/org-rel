@@ -52,17 +52,21 @@ export class AuthService {
       throw new InternalServerErrorException('Something went wrong');
     }
 
-    const jwtSecret = JSON.parse(getJwtSecret.SecretString) as {
+    const { JWT_SECRET } = JSON.parse(getJwtSecret.SecretString) as {
       JWT_SECRET: string;
     };
 
-    const accessTokenReq = generateJwt(jwtSecret.JWT_SECRET, {
-      ...accessClaims,
-      type: TOKEN.ACCESS.TYPE,
-    });
+    const accessTokenReq = generateJwt(
+      JWT_SECRET,
+      {
+        ...accessClaims,
+        type: TOKEN.ACCESS.TYPE,
+      },
+      TOKEN.ACCESS.EXPIRATION,
+    );
 
     const refreshTokenReq = generateJwt(
-      jwtSecret.JWT_SECRET,
+      JWT_SECRET,
       { ...refreshClaims, type: TOKEN.REFRESH.TYPE },
       TOKEN.REFRESH.EXPIRATION,
     );
