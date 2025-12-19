@@ -38,7 +38,7 @@ export class AuthService {
 
   private async generateJwt(
     accessClaims: JWTPayload,
-    refreshClaims: JWTPayload,
+    refreshClaims: JWTPayload & { tokenId: string },
   ) {
     const getJwtSecret = await this.secretsManagerService.send(
       new GetSecretValueCommand({
