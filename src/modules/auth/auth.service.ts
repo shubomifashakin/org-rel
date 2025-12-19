@@ -36,7 +36,7 @@ export class AuthService {
     private readonly secretsManagerService: SecretsManagerService,
   ) {}
 
-  private async generateJwt(
+  private async generateJwts(
     accessClaims: JWTPayload,
     refreshClaims: JWTPayload & { tokenId: string },
   ) {
@@ -96,7 +96,7 @@ export class AuthService {
   ) {
     const tokenId = uuid();
 
-    const { accessToken, refreshToken } = await this.generateJwt(
+    const { accessToken, refreshToken } = await this.generateJwts(
       {
         sub: userData.id,
         email: userData.email,
@@ -266,6 +266,82 @@ export class AuthService {
     return { message: 'success' };
   }
 
-  //FIXME: IMPLEMENT
-  async refresh() {}
+  async refresh(ipAddr: string, oldRefreshToken?: string, userAgent?: string) {
+    if (!oldRefreshToken) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    //FIXME: CACHE OR SOMETHING
+    const secret = await this.secretsManagerService.send(
+      new GetSecretValueCommand({
+        SecretId: env.JWT_SECRET_NAME,
+      }),
+    );
+
+    if (!secret.SecretString) {
+      throw new InternalServerErrorException('Internal Server Error');
+    }
+
+    const jwtSecret = JSON.parse(secret.SecretString) as {
+      JWT_SECRET: string;
+    };
+
+    const { status, error, data } = await verifyJwt(
+      oldRefreshToken,
+      jwtSecret.JWT_SECRET,
+    );
+
+    if (!status) {
+      //FIXME:
+      console.error('refresh error', error);
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    const tokenId = data?.tokenId as string;
+
+    const refreshTokenExists =
+      await this.databaseService.refreshTokens.findUnique({
+        where: {
+          id: tokenId,
+        },
+        select: {
+          expiresAt: true,
+          userId: true,
+          user: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      });
+
+    if (!refreshTokenExists) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    if (refreshTokenExists.expiresAt < new Date()) {
+      await this.databaseService.refreshTokens.delete({
+        where: { id: tokenId },
+      });
+
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    //delete the old refresh token
+    await this.databaseService.refreshTokens.delete({
+      where: { id: tokenId },
+    });
+
+    //generate new ones
+    const tokens = await this.handleAuthenticate(
+      {
+        id: refreshTokenExists.userId,
+        email: refreshTokenExists.user.email,
+      },
+      ipAddr,
+      userAgent,
+    );
+
+    return tokens;
+  }
 }

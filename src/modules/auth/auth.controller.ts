@@ -3,6 +3,7 @@ import { type Request, type Response } from 'express';
 import {
   Body,
   Controller,
+  Get,
   Ip,
   Post,
   Req,
@@ -50,17 +51,22 @@ export class AuthController {
 
   @UseGuards(UserAuthGuard)
   @Post('logout')
-  logOut(@Req() req: Request, @Res({ passthrough: true }) response: Response) {
+  async logOut(
+    @Req() req: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const userId = req.user.id;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const refreshToken = req.cookies?.[TOKEN.REFRESH.TYPE] as
       | string
       | undefined;
 
+    await this.authService.logOut(userId, refreshToken);
+
     response.clearCookie(TOKEN.REFRESH.TYPE);
     response.clearCookie(TOKEN.ACCESS.TYPE);
 
-    return this.authService.logOut(userId, refreshToken);
+    return { message: 'success' };
   }
 
   @Throttle({ default: { limit: 5, ttl: 15 } })
@@ -90,9 +96,34 @@ export class AuthController {
     return response.status(200).json({ message: 'success' });
   }
 
-  //FIXME: IMPLEMENT
   @Throttle({ default: { limit: 5, ttl: 15 } })
-  refresh() {
-    return this.authService.refresh();
+  @Get('refresh')
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) response: Response,
+    @Ip() ipAddr: string,
+    @UserAgent() userAgent?: string,
+  ) {
+    const refreshToken = req.cookies?.[TOKEN.REFRESH.TYPE] as
+      | string
+      | undefined;
+
+    const res = await this.authService.refresh(ipAddr, refreshToken, userAgent);
+
+    response.cookie(TOKEN.REFRESH.TYPE, res.refreshToken, {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: TOKEN.REFRESH.EXPIRATION_MS,
+    });
+
+    response.cookie(TOKEN.ACCESS.TYPE, res.accessToken, {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: TOKEN.ACCESS.EXPIRATION_MS,
+    });
+
+    return { message: 'success' };
   }
 }
