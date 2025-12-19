@@ -91,7 +91,7 @@ export class AuthService {
     userAgent?: string,
   ) {
     const tokenId = uuid();
-    const tokens = await this.generateJwt(
+    const { accessToken, refreshToken } = await this.generateJwt(
       {
         sub: userData.id,
         email: userData.email,
@@ -103,7 +103,7 @@ export class AuthService {
       },
     );
 
-    const hashedRefreshToken = await hashString(tokens.refreshToken);
+    const hashedRefreshToken = await hashString(refreshToken);
 
     if (!hashedRefreshToken.status) {
       console.log('failed to hash refresh token', hashedRefreshToken.error);
@@ -122,7 +122,7 @@ export class AuthService {
       },
     });
 
-    return tokens;
+    return { accessToken, refreshToken };
   }
 
   async signUp(signUpDto: SignUpDto, ipAddr: string, userAgent?: string) {
