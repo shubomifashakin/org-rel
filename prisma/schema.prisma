@@ -104,7 +104,7 @@ model Invites {
 }
 
 model RefreshTokens {
-  id            String   @id @default(uuid())
+  id            String   @id
   token         String   @unique
   userId        String
   user          Users    @relation(fields: [userId], references: [id], onDelete: Cascade)

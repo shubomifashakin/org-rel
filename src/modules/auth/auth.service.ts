@@ -1,4 +1,5 @@
 import { JWTPayload } from 'jose';
+import { v4 as uuid } from 'uuid';
 import {
   ConflictException,
   Injectable,
@@ -94,17 +95,28 @@ export class AuthService {
         },
       });
 
+      const tokenId = uuid();
       const tokens = await this.generateJwt({
+        tokenId,
         sub: userData.id,
         email: userData.email,
       });
 
+      const hashedRefreshToken = await hashPassword(tokens.refreshToken);
+
+      if (!hashedRefreshToken.status) {
+        console.log('failed to hash refresh token', hashedRefreshToken.error);
+
+        throw new InternalServerErrorException('Something went wrong');
+      }
+
       await this.databaseService.refreshTokens.create({
         data: {
           userAgent,
+          id: tokenId,
           ipAddress: ipAddr,
           userId: userData.id,
-          token: tokens.refreshToken,
+          token: hashedRefreshToken.data,
           expiresAt: new Date(Date.now() + DAYS_14_MS),
         },
       });
