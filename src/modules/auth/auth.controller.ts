@@ -64,11 +64,28 @@ export class AuthController {
   }
 
   @Post('sign-in')
-  signIn(
+  async signIn(
     @Body() body: SignInDto,
+    @Res() response: Response,
     @Ip() ipAddr: string,
     @UserAgent() userAgent?: string,
   ) {
-    return this.authService.signIn(body, ipAddr, userAgent);
+    const res = await this.authService.signIn(body, ipAddr, userAgent);
+
+    response.cookie(TOKEN.REFRESH.TYPE, res.tokens.refreshToken, {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: TOKEN.REFRESH.EXPIRATION_MS,
+    });
+
+    response.cookie(TOKEN.ACCESS.TYPE, res.tokens.accessToken, {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: TOKEN.ACCESS.EXPIRATION_MS,
+    });
+
+    return response.status(200).json({ message: 'success' });
   }
 }
