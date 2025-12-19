@@ -89,4 +89,10 @@ export class AuthController {
 
     return response.status(200).json({ message: 'success' });
   }
+
+  //FIXME: IMPLEMENT
+  @Throttle({ default: { limit: 5, ttl: 15 } })
+  refresh() {
+    return this.authService.refresh();
+  }
 }

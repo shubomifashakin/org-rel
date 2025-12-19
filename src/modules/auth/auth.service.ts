@@ -265,4 +265,7 @@ export class AuthService {
 
     return { message: 'success' };
   }
+
+  //FIXME: IMPLEMENT
+  async refresh() {}
 }
