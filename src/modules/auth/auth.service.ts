@@ -95,6 +95,7 @@ export class AuthService {
     userAgent?: string,
   ) {
     const tokenId = uuid();
+
     const { accessToken, refreshToken } = await this.generateJwt(
       {
         sub: userData.id,
@@ -107,10 +108,10 @@ export class AuthService {
       },
     );
 
-    const hashedRefreshToken = await hashString(refreshToken);
+    const { status, data, error } = await hashString(refreshToken);
 
-    if (!hashedRefreshToken.status) {
-      console.log('failed to hash refresh token', hashedRefreshToken.error);
+    if (!status) {
+      console.log('failed to hash refresh token', error);
 
       throw new InternalServerErrorException('Something went wrong');
     }
@@ -121,7 +122,7 @@ export class AuthService {
         id: tokenId,
         ipAddress: ipAddr,
         userId: userData.id,
-        token: hashedRefreshToken.data,
+        token: data,
         expiresAt: new Date(Date.now() + DAYS_14_MS),
       },
     });
