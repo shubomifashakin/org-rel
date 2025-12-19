@@ -3,11 +3,11 @@ import * as jose from 'jose';
 
 import env from '../../core/serverEnv/index.js';
 
-type FnResult =
-  | { status: true; data: string; error: null }
+type FnResult<T> =
+  | { status: true; data: T; error: null }
   | { status: false; data: null; error: string };
 
-export async function hashString(password: string): Promise<FnResult> {
+export async function hashString(password: string): Promise<FnResult<string>> {
   try {
     const hash = await argon2.hash(password, {
       timeCost: 4,
@@ -50,7 +50,7 @@ export async function generateJwt(
   jwtSecret: string,
   payload: jose.JWTPayload,
   exp = '5m',
-): Promise<FnResult> {
+): Promise<FnResult<string>> {
   try {
     const secret = new TextEncoder().encode(jwtSecret);
 
@@ -78,10 +78,7 @@ export async function verifyJwt(
   jwt: string,
   secret: string,
   options?: jose.JWTVerifyOptions,
-): Promise<
-  | { status: true; data: jose.JWTPayload; error: null }
-  | { status: false; data: null; error: string }
-> {
+): Promise<FnResult<jose.JWTPayload>> {
   try {
     const { payload } = await jose.jwtVerify(
       jwt,
