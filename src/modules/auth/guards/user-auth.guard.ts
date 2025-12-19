@@ -11,6 +11,7 @@ import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import { TOKEN } from '../common/utils/constants.js';
 import { verifyJwt } from '../../../common/utils/fns.js';
 import { SecretsManagerService } from '../../../core/secrets-manager/secrets-manager.service.js';
+import env from '../../../core/serverEnv/index.js';
 
 @Injectable()
 export class UserAuthGuard implements CanActivate {
@@ -31,7 +32,7 @@ export class UserAuthGuard implements CanActivate {
       //FIXME: CACHE THIS, uselike 10 minutess?
       const secret = await this.secretsManagerService.send(
         new GetSecretValueCommand({
-          SecretId: process.env.JWT_SECRET_NAME,
+          SecretId: env.JWT_SECRET_NAME,
         }),
       );
 

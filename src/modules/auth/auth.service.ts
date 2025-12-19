@@ -218,7 +218,7 @@ export class AuthService {
     //FIXME: CACHE OR SOMETHING
     const secret = await this.secretsManagerService.send(
       new GetSecretValueCommand({
-        SecretId: process.env.JWT_SECRET_NAME,
+        SecretId: env.JWT_SECRET_NAME,
       }),
     );
 
