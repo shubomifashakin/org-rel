@@ -15,6 +15,7 @@ import { AuthService } from './auth.service.js';
 import { SignUpDto } from './common/dtos/sign-up.dto.js';
 import { UserAgent } from '../../common/decorators/user-agent.decorator.js';
 import { TOKEN } from './common/utils/constants.js';
+import { SignInDto } from './common/dtos/sign-in.dto.js';
 
 @Controller('auth')
 export class AuthController {
@@ -63,7 +64,11 @@ export class AuthController {
   }
 
   @Post('sign-in')
-  signIn() {
-    return this.authService.signIn();
+  signIn(
+    @Body() body: SignInDto,
+    @Ip() ipAddr: string,
+    @UserAgent() userAgent?: string,
+  ) {
+    return this.authService.signIn(body, ipAddr, userAgent);
   }
 }

@@ -7,7 +7,7 @@ type FnResult =
   | { status: true; data: string; error: null }
   | { status: false; data: null; error: string };
 
-export async function hashPassword(password: string): Promise<FnResult> {
+export async function hashString(password: string): Promise<FnResult> {
   try {
     const hash = await argon2.hash(password, {
       timeCost: 4,
@@ -17,6 +17,23 @@ export async function hashPassword(password: string): Promise<FnResult> {
     });
 
     return { status: true, data: hash, error: null };
+  } catch (error: unknown) {
+    //FIXME: USE A BETTER LOGGER
+    console.log(error);
+
+    if (error instanceof Error) {
+      return { status: false, data: null, error: error.message };
+    }
+
+    return { status: false, data: null, error: 'Failed to hash password' };
+  }
+}
+
+export async function compareHashedString(plainString: string, hash: string) {
+  try {
+    const isTheSame = await argon2.verify(hash, plainString);
+
+    return { status: true, data: isTheSame, error: null };
   } catch (error: unknown) {
     //FIXME: USE A BETTER LOGGER
     console.log(error);

@@ -1,21 +1,31 @@
 import { JWTPayload } from 'jose';
 import { v4 as uuid } from 'uuid';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
+import { Users } from '../../../generated/prisma/client.js';
+
 import { SignUpDto } from './common/dtos/sign-up.dto.js';
-import { generateJwt, hashPassword } from '../../common/utils/fns.js';
+import {
+  compareHashedString,
+  generateJwt,
+  hashString,
+} from '../../common/utils/fns.js';
 
 import env from '../../core/serverEnv/index.js';
+
 import { DatabaseService } from '../../core/database/database.service.js';
 import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
 import { DAYS_14_MS } from '../../common/utils/constants.js';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { TOKEN } from './common/utils/constants.js';
+import { SignInDto } from './common/dtos/sign-in.dto.js';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +34,10 @@ export class AuthService {
     private readonly secretsManagerService: SecretsManagerService,
   ) {}
 
-  private async generateJwt(claims: JWTPayload) {
+  private async generateJwt(
+    accessClaims: JWTPayload,
+    refreshClaims: JWTPayload,
+  ) {
     const getJwtSecret = await this.secretsManagerService.send(
       new GetSecretValueCommand({
         SecretId: env.JWT_SECRET_NAME,
@@ -42,13 +55,13 @@ export class AuthService {
     };
 
     const accessTokenReq = generateJwt(jwtSecret.JWT_SECRET, {
-      ...claims,
+      ...accessClaims,
       type: TOKEN.ACCESS.TYPE,
     });
 
     const refreshTokenReq = generateJwt(
       jwtSecret.JWT_SECRET,
-      { ...claims, type: TOKEN.REFRESH.TYPE },
+      { ...refreshClaims, type: TOKEN.REFRESH.TYPE },
       TOKEN.REFRESH.EXPIRATION,
     );
 
@@ -70,9 +83,49 @@ export class AuthService {
     return { accessToken: accessToken.data, refreshToken: refreshToken.data };
   }
 
+  private async handleAuthenticate(
+    userData: Pick<Users, 'id' | 'email'>,
+    ipAddr: string,
+    userAgent?: string,
+  ) {
+    const tokenId = uuid();
+    const tokens = await this.generateJwt(
+      {
+        sub: userData.id,
+        email: userData.email,
+      },
+      {
+        tokenId,
+        sub: userData.id,
+        email: userData.email,
+      },
+    );
+
+    const hashedRefreshToken = await hashString(tokens.refreshToken);
+
+    if (!hashedRefreshToken.status) {
+      console.log('failed to hash refresh token', hashedRefreshToken.error);
+
+      throw new InternalServerErrorException('Something went wrong');
+    }
+
+    await this.databaseService.refreshTokens.create({
+      data: {
+        userAgent,
+        id: tokenId,
+        ipAddress: ipAddr,
+        userId: userData.id,
+        token: hashedRefreshToken.data,
+        expiresAt: new Date(Date.now() + DAYS_14_MS),
+      },
+    });
+
+    return tokens;
+  }
+
   async signUp(signUpDto: SignUpDto, ipAddr: string, userAgent?: string) {
     try {
-      const { status, data, error } = await hashPassword(signUpDto.password);
+      const { status, data, error } = await hashString(signUpDto.password);
 
       if (!status) {
         //FIXME: USE A BETTER LOGGER IMPLEMENTATION
@@ -95,31 +148,7 @@ export class AuthService {
         },
       });
 
-      const tokenId = uuid();
-      const tokens = await this.generateJwt({
-        tokenId,
-        sub: userData.id,
-        email: userData.email,
-      });
-
-      const hashedRefreshToken = await hashPassword(tokens.refreshToken);
-
-      if (!hashedRefreshToken.status) {
-        console.log('failed to hash refresh token', hashedRefreshToken.error);
-
-        throw new InternalServerErrorException('Something went wrong');
-      }
-
-      await this.databaseService.refreshTokens.create({
-        data: {
-          userAgent,
-          id: tokenId,
-          ipAddress: ipAddr,
-          userId: userData.id,
-          token: hashedRefreshToken.data,
-          expiresAt: new Date(Date.now() + DAYS_14_MS),
-        },
-      });
+      const tokens = await this.handleAuthenticate(userData, ipAddr, userAgent);
 
       return { message: 'success', tokens };
     } catch (error: unknown) {
@@ -128,6 +157,47 @@ export class AuthService {
           throw new ConflictException('Email or username already exists');
         }
       }
+
+      throw new InternalServerErrorException('Internal Server Error');
+    }
+  }
+
+  async signIn(body: SignInDto, ipAddr: string, userAgent?: string) {
+    try {
+      const existingUser = await this.databaseService.users.findUnique({
+        where: {
+          username: body.username,
+        },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+          username: true,
+        },
+      });
+
+      if (!existingUser) {
+        throw new NotFoundException('User does not exist');
+      }
+
+      const passwordIsCorrect = await compareHashedString(
+        existingUser.password,
+        body.password,
+      );
+
+      if (!passwordIsCorrect) {
+        throw new BadRequestException('Invalid Credentials');
+      }
+
+      const tokens = await this.handleAuthenticate(
+        existingUser,
+        ipAddr,
+        userAgent,
+      );
+
+      return { message: 'success', tokens };
+    } catch (error) {
+      console.error('Invalid sign in request', error);
 
       throw new InternalServerErrorException('Internal Server Error');
     }
@@ -155,9 +225,5 @@ export class AuthService {
     }
 
     return { message: 'success' };
-  }
-
-  signIn() {
-    return { message: 'hello world' };
   }
 }
