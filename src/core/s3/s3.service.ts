@@ -19,7 +19,7 @@ export class S3Service extends S3Client implements OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    //FIXME: USE
+    //FIXME: LOG PROPERLY
     console.log('S3Service is being destroyed');
     this.destroy();
   }
@@ -46,9 +46,6 @@ export class S3Service extends S3Client implements OnModuleDestroy {
         error: null,
       };
     } catch (error) {
-      //FIXME: LOG ERROR PROPERLY
-      console.error(error);
-
       if (error instanceof Error) {
         return {
           status: false,

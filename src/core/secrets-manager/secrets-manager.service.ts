@@ -38,6 +38,7 @@ export class SecretsManagerService
   }
 
   onModuleDestroy() {
+    //FIXME: LOG PROPERLY
     console.log('destroying secrets manager service');
     this.destroy();
   }
@@ -48,7 +49,7 @@ export class SecretsManagerService
         .getFromCache<T>(secretId)
         .catch((error) => {
           //FIXME:
-          console.error('Failed to get secret from cache', error);
+          console.error(`Failed to get ${secretId}:secret from cache`, error);
 
           return undefined;
         });
