@@ -7,7 +7,12 @@ import {
   GetSecretValueCommand,
   SecretsManagerClient,
 } from '@aws-sdk/client-secrets-manager';
+
+import { RedisService } from '../redis/redis.service.js';
+
 import env from '../serverEnv/index.js';
+
+import { MINUTES_10 } from '../../common/utils/constants.js';
 
 type FnResult<T> =
   | { status: true; data: T; error: null }
@@ -18,7 +23,9 @@ export class SecretsManagerService
   extends SecretsManagerClient
   implements OnModuleDestroy
 {
-  constructor() {
+  private readonly redisService: RedisService;
+
+  constructor(redisService: RedisService) {
     super({
       region: env.AWS_REGION,
       credentials: {
@@ -26,6 +33,8 @@ export class SecretsManagerService
         secretAccessKey: env.AWS_SECRET_KEY,
       },
     });
+
+    this.redisService = redisService;
   }
 
   onModuleDestroy() {
@@ -35,7 +44,19 @@ export class SecretsManagerService
 
   async getSecret<T>(secretId: string): Promise<FnResult<T>> {
     try {
-      //FIXME: CACHE OR SOMETHING
+      const secretExistsInCache = await this.redisService
+        .getFromCache<T>(secretId)
+        .catch((error) => {
+          //FIXME:
+          console.error('Failed to get secret from cache', error);
+
+          return undefined;
+        });
+
+      if (secretExistsInCache) {
+        return { status: true, error: null, data: secretExistsInCache };
+      }
+
       const secret = await this.send(
         new GetSecretValueCommand({
           SecretId: secretId,
@@ -49,6 +70,14 @@ export class SecretsManagerService
       const jwtSecret = JSON.parse(secret.SecretString) as {
         JWT_SECRET: string;
       };
+
+      await this.redisService
+        .setInCache(secretId, jwtSecret, MINUTES_10)
+        .catch((error) => {
+          console.error(`Failed to set ${secretId}:secret in cache`, error);
+
+          return undefined;
+        });
 
       return { status: true, data: jwtSecret as T, error: null };
     } catch (err) {

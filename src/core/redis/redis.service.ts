@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import env from '../serverEnv/index.js';
-import { REDIS_7_DAYS } from '../../common/utils/constants.js';
+import { DAYS_7 } from '../../common/utils/constants.js';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import { ThrottlerStorageRecord } from '@nestjs/throttler/dist/throttler-storage-record.interface.js';
 
@@ -57,9 +57,15 @@ export class RedisService
     await this.client.quit();
   }
 
+  /**
+   *
+   * @param key identifier
+   * @param data data to store
+   * @param exp in seconds
+   */
   async setInCache(key: string, data: any, exp?: number) {
     await this.client.set(key, JSON.stringify(data), {
-      expiration: { type: 'EX', value: exp || REDIS_7_DAYS },
+      expiration: { type: 'EX', value: exp || DAYS_7 },
     });
   }
 
