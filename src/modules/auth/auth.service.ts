@@ -28,6 +28,10 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { TOKEN } from './common/utils/constants.js';
 import { SignInDto } from './common/dtos/sign-in.dto.js';
 
+type JWT_SECRET = {
+  JWT_SECRET: string;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -39,9 +43,9 @@ export class AuthService {
     accessClaims: JWTPayload,
     refreshClaims: JWTPayload & { tokenId: string },
   ) {
-    const secret = await this.secretsManagerService.getSecret<{
-      JWT_SECRET: string;
-    }>(env.JWT_SECRET_NAME);
+    const secret = await this.secretsManagerService.getSecret<JWT_SECRET>(
+      env.JWT_SECRET_NAME,
+    );
 
     if (!secret.status) {
       console.error('Failed to get secret from secrets manager', secret.error);
@@ -210,9 +214,9 @@ export class AuthService {
       return { message: 'success' };
     }
 
-    const secret = await this.secretsManagerService.getSecret<{
-      JWT_SECRET: string;
-    }>(env.JWT_SECRET_NAME);
+    const secret = await this.secretsManagerService.getSecret<JWT_SECRET>(
+      env.JWT_SECRET_NAME,
+    );
 
     if (!secret.status) {
       console.error('Failed to get secret from secrets manager', secret.error);
@@ -261,9 +265,9 @@ export class AuthService {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    const secret = await this.secretsManagerService.getSecret<{
-      JWT_SECRET: string;
-    }>(env.JWT_SECRET_NAME);
+    const secret = await this.secretsManagerService.getSecret<JWT_SECRET>(
+      env.JWT_SECRET_NAME,
+    );
 
     if (!secret.status) {
       console.error('Failed to get secret from secrets manager', secret.error);
