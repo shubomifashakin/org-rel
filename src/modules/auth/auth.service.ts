@@ -23,11 +23,12 @@ import env from '../../core/serverEnv/index.js';
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
+import { SignInDto } from './common/dtos/sign-in.dto.js';
+
 import { DatabaseService } from '../../core/database/database.service.js';
 import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
 import { DAYS_14_MS } from '../../common/utils/constants.js';
 import { TOKEN } from '../../common/utils/constants.js';
-import { SignInDto } from './common/dtos/sign-in.dto.js';
 
 type JWT_SECRET = {
   JWT_SECRET: string;
