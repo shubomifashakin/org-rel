@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from './health.controller.js';
+import { HealthService } from './health.service.js';
 
 describe('HealthController', () => {
   let controller: HealthController;
@@ -7,6 +8,7 @@ describe('HealthController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
+      providers: [HealthService],
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
@@ -14,5 +16,12 @@ describe('HealthController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('Success Test', () => {
+    it('should return ok', () => {
+      const req = controller.getHealth();
+      expect(req.status).toBe('ok');
+    });
   });
 });
