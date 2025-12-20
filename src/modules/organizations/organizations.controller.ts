@@ -18,7 +18,6 @@ import {
 import { OrganizationsService } from './organizations.service.js';
 
 import { ValidateUUID } from './common/decorators/uuid-validator.decorator.js';
-import { GetImage } from './common/decorators/get-file.decorator.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
@@ -30,6 +29,7 @@ import { UpdateInviteDto } from './dto/update-invite.dto.js';
 
 import { Organizations, Roles } from '../../../generated/prisma/client.js';
 import { Projects } from '../../../generated/prisma/client.js';
+import { GetImage } from '../../common/decorators/get-image.decorator.js';
 
 @Controller('organizations')
 export class OrganizationsController {

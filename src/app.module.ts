@@ -18,6 +18,7 @@ import { RedisService } from './core/redis/redis.service.js';
 import { logger } from './middlewares/logger.middleware.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { SecretsManagerModule } from './core/secrets-manager/secrets-manager.module.js';
+import { AccountsModule } from './modules/accounts/accounts.module.js';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { SecretsManagerModule } from './core/secrets-manager/secrets-manager.mod
     S3Module,
     SecretsManagerModule,
     AuthModule,
+    AccountsModule,
     HealthModule,
   ],
   controllers: [],
