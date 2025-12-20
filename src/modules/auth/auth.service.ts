@@ -8,7 +8,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
 import { Users } from '../../../generated/prisma/client.js';
 
@@ -40,21 +39,17 @@ export class AuthService {
     accessClaims: JWTPayload,
     refreshClaims: JWTPayload & { tokenId: string },
   ) {
-    const getJwtSecret = await this.secretsManagerService.send(
-      new GetSecretValueCommand({
-        SecretId: env.JWT_SECRET_NAME,
-      }),
-    );
+    const secret = await this.secretsManagerService.getSecret<{
+      JWT_SECRET: string;
+    }>(env.JWT_SECRET_NAME);
 
-    if (!getJwtSecret.SecretString) {
-      console.log('failed to get secret from secrets manager');
+    if (!secret.status) {
+      console.error('Failed to get secret from secrets manager', secret.error);
 
-      throw new InternalServerErrorException('Something went wrong');
+      throw new InternalServerErrorException('Internal Server Error');
     }
 
-    const { JWT_SECRET } = JSON.parse(getJwtSecret.SecretString) as {
-      JWT_SECRET: string;
-    };
+    const { JWT_SECRET } = secret.data;
 
     const accessTokenReq = generateJwt(
       JWT_SECRET,
@@ -215,24 +210,19 @@ export class AuthService {
       return { message: 'success' };
     }
 
-    //FIXME: CACHE OR SOMETHING
-    const secret = await this.secretsManagerService.send(
-      new GetSecretValueCommand({
-        SecretId: env.JWT_SECRET_NAME,
-      }),
-    );
+    const secret = await this.secretsManagerService.getSecret<{
+      JWT_SECRET: string;
+    }>(env.JWT_SECRET_NAME);
 
-    if (!secret.SecretString) {
+    if (!secret.status) {
+      console.error('Failed to get secret from secrets manager', secret.error);
+
       throw new InternalServerErrorException('Internal Server Error');
     }
 
-    const jwtSecret = JSON.parse(secret.SecretString) as {
-      JWT_SECRET: string;
-    };
-
     const { status, error, data } = await verifyJwt(
       refreshToken,
-      jwtSecret.JWT_SECRET,
+      secret.data.JWT_SECRET,
     );
 
     if (!status) {
@@ -271,24 +261,19 @@ export class AuthService {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    //FIXME: CACHE OR SOMETHING
-    const secret = await this.secretsManagerService.send(
-      new GetSecretValueCommand({
-        SecretId: env.JWT_SECRET_NAME,
-      }),
-    );
+    const secret = await this.secretsManagerService.getSecret<{
+      JWT_SECRET: string;
+    }>(env.JWT_SECRET_NAME);
 
-    if (!secret.SecretString) {
+    if (!secret.status) {
+      console.error('Failed to get secret from secrets manager', secret.error);
+
       throw new InternalServerErrorException('Internal Server Error');
     }
 
-    const jwtSecret = JSON.parse(secret.SecretString) as {
-      JWT_SECRET: string;
-    };
-
     const { status, error, data } = await verifyJwt(
       oldRefreshToken,
-      jwtSecret.JWT_SECRET,
+      secret.data.JWT_SECRET,
     );
 
     if (!status) {
