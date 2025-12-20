@@ -8,10 +8,11 @@ import {
 import { type Request } from 'express';
 import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
-import { TOKEN } from '../common/utils/constants.js';
-import { verifyJwt } from '../../../common/utils/fns.js';
-import { SecretsManagerService } from '../../../core/secrets-manager/secrets-manager.service.js';
-import env from '../../../core/serverEnv/index.js';
+import env from '../../core/serverEnv/index.js';
+import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
+
+import { TOKEN } from '../utils/constants.js';
+import { verifyJwt } from '../../common/utils/fns.js';
 
 @Injectable()
 export class UserAuthGuard implements CanActivate {

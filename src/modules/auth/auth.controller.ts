@@ -11,12 +11,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { UserAuthGuard } from './guards/user-auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { SignUpDto } from './common/dtos/sign-up.dto.js';
-import { UserAgent } from '../../common/decorators/user-agent.decorator.js';
-import { TOKEN } from './common/utils/constants.js';
 import { SignInDto } from './common/dtos/sign-in.dto.js';
+
+import { TOKEN } from '../../common/utils/constants.js';
+import { UserAgent } from '../../common/decorators/user-agent.decorator.js';
+import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
 
 @Controller('auth')
 export class AuthController {

@@ -4,3 +4,16 @@ export const DAYS_14 = 14 * 24 * 60 * 60;
 export const DAYS_14_MS = DAYS_14 * 1000;
 export const MINUTES_10 = 10 * 60;
 export const MINUTES_10_MS = MINUTES_10 * 1000;
+
+export const TOKEN = {
+  ACCESS: {
+    TYPE: 'access_token' as const,
+    EXPIRATION: '10m',
+    EXPIRATION_MS: MINUTES_10_MS,
+  },
+  REFRESH: {
+    TYPE: 'refresh_token' as const,
+    EXPIRATION: '14d',
+    EXPIRATION_MS: DAYS_14_MS,
+  },
+} as const;
