@@ -6,7 +6,6 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { type Request } from 'express';
-import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
 import env from '../../core/serverEnv/index.js';
 import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
@@ -30,24 +29,19 @@ export class UserAuthGuard implements CanActivate {
     }
 
     try {
-      //FIXME: CACHE THIS, uselike 10 minutess?
-      const secret = await this.secretsManagerService.send(
-        new GetSecretValueCommand({
-          SecretId: env.JWT_SECRET_NAME,
-        }),
-      );
+      const secret = await this.secretsManagerService.getSecret<{
+        JWT_SECRET: string;
+      }>(env.JWT_SECRET_NAME);
 
-      if (!secret.SecretString) {
+      if (!secret.status) {
+        //FIXME: USE BETTER LOGGER IMPLMEMENTATION
+        console.error(secret.error);
         throw new InternalServerErrorException('Internal Server Error');
       }
 
-      const jwtSecret = JSON.parse(secret.SecretString) as {
-        JWT_SECRET: string;
-      };
-
       const { status, error, data } = await verifyJwt(
         accessToken,
-        jwtSecret.JWT_SECRET,
+        secret.data.JWT_SECRET,
       );
 
       if (!status) {
