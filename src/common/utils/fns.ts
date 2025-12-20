@@ -29,7 +29,13 @@ export async function hashString(password: string): Promise<FnResult<string>> {
   }
 }
 
-export async function compareHashedString(plainString: string, hash: string) {
+export async function compareHashedString({
+  plainString,
+  hash,
+}: {
+  plainString: string;
+  hash: string;
+}) {
   try {
     const isTheSame = await argon2.verify(hash, plainString);
 

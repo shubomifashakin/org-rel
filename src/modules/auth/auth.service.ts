@@ -169,44 +169,43 @@ export class AuthService {
   }
 
   async signIn(body: SignInDto, ipAddr: string, userAgent?: string) {
-    try {
-      const existingUser = await this.databaseService.users.findUnique({
-        where: {
-          username: body.username,
-        },
-        select: {
-          id: true,
-          email: true,
-          password: true,
-          username: true,
-        },
-      });
+    const existingUser = await this.databaseService.users.findUnique({
+      where: {
+        username: body.username,
+      },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        username: true,
+      },
+    });
 
-      if (!existingUser) {
-        throw new NotFoundException('User does not exist');
-      }
+    if (!existingUser) {
+      throw new NotFoundException('User does not exist');
+    }
 
-      const passwordIsCorrect = await compareHashedString(
-        existingUser.password,
-        body.password,
-      );
+    const { status, error, data } = await compareHashedString({
+      plainString: body.password,
+      hash: existingUser.password,
+    });
 
-      if (!passwordIsCorrect) {
-        throw new BadRequestException('Invalid Credentials');
-      }
-
-      const tokens = await this.handleAuthenticate(
-        existingUser,
-        ipAddr,
-        userAgent,
-      );
-
-      return { message: 'success', tokens };
-    } catch (error) {
-      console.error('Invalid sign in request', error);
-
+    if (!status) {
+      console.error('password fail reason', error);
       throw new InternalServerErrorException('Internal Server Error');
     }
+
+    if (!data) {
+      throw new BadRequestException('Invalid Credentials');
+    }
+
+    const tokens = await this.handleAuthenticate(
+      existingUser,
+      ipAddr,
+      userAgent,
+    );
+
+    return { message: 'success', tokens };
   }
 
   async logOut(userId: string, refreshToken?: string) {
