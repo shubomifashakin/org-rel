@@ -12,6 +12,8 @@ const env = {
   AWS_REGION: process.env.AWS_REGION!,
   JWT_SECRET_NAME: process.env.JWT_SECRET_NAME!,
   CLIENT_DOMAIN: process.env.CLIENT_DOMAIN!,
+  RESEND_API_KEY: process.env.RESEND_API_KEY!,
+  MAILER_FROM: process.env.MAILER_FROM!,
 };
 
 export default env;

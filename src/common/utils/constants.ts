@@ -4,6 +4,8 @@ export const DAYS_14 = 14 * 24 * 60 * 60;
 export const DAYS_14_MS = DAYS_14 * 1000;
 export const MINUTES_10 = 10 * 60;
 export const MINUTES_10_MS = MINUTES_10 * 1000;
+export const MINUTES_5 = 5 * 60;
+export const MINUTES_5_MS = MINUTES_5 * 1000;
 
 export const TOKEN = {
   ACCESS: {

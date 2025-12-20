@@ -1,3 +1,4 @@
+import { ThrottlerException } from '@nestjs/throttler';
 import { JWTPayload } from 'jose';
 import { v4 as uuid } from 'uuid';
 import {
@@ -15,6 +16,7 @@ import { SignUpDto } from './common/dtos/sign-up.dto.js';
 import {
   compareHashedString,
   generateJwt,
+  generateSuspiciousLoginMail,
   hashString,
   verifyJwt,
 } from '../../common/utils/fns.js';
@@ -27,7 +29,10 @@ import { SignInDto } from './common/dtos/sign-in.dto.js';
 
 import { DatabaseService } from '../../core/database/database.service.js';
 import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
-import { DAYS_14_MS } from '../../common/utils/constants.js';
+import { RedisService } from '../../core/redis/redis.service.js';
+import { MailerService } from '../../core/mailer/mailer.service.js';
+
+import { DAYS_14_MS, MINUTES_10_MS } from '../../common/utils/constants.js';
 import { TOKEN } from '../../common/utils/constants.js';
 
 type JWT_SECRET = {
@@ -38,6 +43,8 @@ type JWT_SECRET = {
 export class AuthService {
   constructor(
     private readonly databaseService: DatabaseService,
+    private readonly redisService: RedisService,
+    private readonly mailerService: MailerService,
     private readonly secretsManagerService: SecretsManagerService,
   ) {}
 
@@ -171,6 +178,22 @@ export class AuthService {
   }
 
   async signIn(body: SignInDto, ipAddr: string, userAgent?: string) {
+    const attemptKey = `attempts:${body.username}:${ipAddr}`;
+    const attempts = await this.redisService
+      .getFromCache<number>(attemptKey)
+      .catch((error) => {
+        console.error(`failed to get attempts for ${attemptKey}`, error);
+        return undefined;
+      });
+
+    const currentAttempts = attempts || 1;
+
+    if (currentAttempts >= 5) {
+      throw new ThrottlerException('Too many login attempts');
+    }
+
+    const totalAttempts = attempts ? attempts + 1 : 1;
+
     const existingUser = await this.databaseService.users.findUnique({
       where: {
         username: body.username,
@@ -198,6 +221,34 @@ export class AuthService {
     }
 
     if (!data) {
+      await this.redisService
+        .setInCache(attemptKey, totalAttempts, MINUTES_10_MS)
+        .catch((error) => {
+          console.error(
+            `Failed to increment login attempts for ${attemptKey}`,
+            error,
+          );
+        });
+
+      if (totalAttempts >= 5) {
+        console.warn(
+          `TOO MAY LOGIN ATTEMPTS FOR ${existingUser.username} from ${ipAddr}`,
+        );
+        const { error } = await this.mailerService.emails.send({
+          to: existingUser.email,
+          subject: 'Suspicious Login Attempt',
+          html: generateSuspiciousLoginMail(ipAddr),
+          from: env.MAILER_FROM,
+        });
+
+        if (error) {
+          console.error(
+            `Failed to send suspicious login mail to user:${existingUser.id}`,
+            error.message,
+          );
+        }
+      }
+
       throw new BadRequestException('Invalid Credentials');
     }
 
@@ -206,6 +257,10 @@ export class AuthService {
       ipAddr,
       userAgent,
     );
+
+    await this.redisService.deleteFromCache(attemptKey).catch((error) => {
+      console.error(`Failed to delete login attempts for ${attemptKey}`, error);
+    });
 
     return { message: 'success', tokens };
   }
