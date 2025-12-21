@@ -5,11 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
+
+import env from '../../core/serverEnv/index.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { UpdateAccountDto } from './dtos/update-account.dto.js';
 import { RedisService } from '../../core/redis/redis.service.js';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
 
 type UserInfo = {
   id: string;
@@ -107,7 +109,10 @@ export class AccountsService {
       let s3Url: string | undefined = undefined;
 
       if (file) {
-        const { status, data, error } = await this.s3Service.uploadToS3(file);
+        const { status, data, error } = await this.s3Service.uploadToS3(
+          env.S3_BUCKET_NAME,
+          file,
+        );
 
         if (!status) {
           console.error('Failed to upload image to s3', error);
