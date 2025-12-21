@@ -323,13 +323,17 @@ export class OrganizationsService {
     organizationId: string,
     inviteUserDto: InviteUserDto,
   ) {
-    const usersFullName = await this.databaseService.users.findUnique({
+    const invitersFullName = await this.databaseService.users.findUnique({
       where: { id: userId },
-      select: { fullname: true },
+      select: { fullname: true, email: true },
     });
 
-    if (!usersFullName) {
-      throw new NotFoundException('User Not Found');
+    if (!invitersFullName) {
+      throw new NotFoundException('Inviter does not exist');
+    }
+
+    if (invitersFullName.email === inviteUserDto.email) {
+      throw new BadRequestException('You cannot invite yourself');
     }
 
     const organizationName =
