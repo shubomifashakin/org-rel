@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -556,6 +557,21 @@ export class OrganizationsService {
       }
     }
 
+    const isMember = await this.databaseService.organizationsOnUsers.findUnique(
+      {
+        where: {
+          organizationId_userId: {
+            userId: createProjectDto.userId,
+            organizationId,
+          },
+        },
+      },
+    );
+
+    if (!isMember) {
+      throw new ForbiddenException('User is not a member of the organization');
+    }
+
     const project = (await this.databaseService.projects.create({
       data: {
         name: createProjectDto.name,
@@ -634,6 +650,24 @@ export class OrganizationsService {
     updateProjectDto: UpdateProjectDto,
     image?: Express.Multer.File,
   ) {
+    if (updateProjectDto?.userId) {
+      const isMember =
+        await this.databaseService.organizationsOnUsers.findUnique({
+          where: {
+            organizationId_userId: {
+              userId: updateProjectDto.userId,
+              organizationId: orgId,
+            },
+          },
+        });
+
+      if (!isMember) {
+        throw new ForbiddenException(
+          'User is not a member of the organization',
+        );
+      }
+    }
+
     let s3Url: string | undefined = undefined;
 
     if (image) {
