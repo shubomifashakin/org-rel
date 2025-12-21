@@ -128,8 +128,8 @@ export class OrganizationsController {
     return this.organizationsService.getAllInvites(id, next);
   }
 
-  @Post(':organizationId/users/invites/:inviteId')
-  @UseGuards(IsMemberGuard)
+  @Post(':organizationId/users/invites/:inviteId') //update the status of an invite
+  @UseGuards(IsMemberGuard) //FIXME: CONFIRM IF PROPERLY IMPLEMENTED
   updateInvite(
     @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
     @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
