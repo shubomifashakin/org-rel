@@ -13,6 +13,7 @@ import {
   HttpCode,
   UploadedFiles,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 
 import { OrganizationsService } from './organizations.service.js';
@@ -30,8 +31,10 @@ import { UpdateInviteDto } from './dto/update-invite.dto.js';
 import { Organizations, Roles } from '../../../generated/prisma/client.js';
 import { Projects } from '../../../generated/prisma/client.js';
 import { GetImage } from '../../common/decorators/get-image.decorator.js';
+import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
 
 @Controller('organizations')
+@UseGuards(UserAuthGuard)
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
