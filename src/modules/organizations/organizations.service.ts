@@ -265,6 +265,7 @@ export class OrganizationsService {
     };
   }
 
+  //USERS INVITES
   async inviteOneUser(
     userId: string,
     organizationId: string,
@@ -362,6 +363,7 @@ export class OrganizationsService {
     return { message: 'status' };
   }
 
+  //USER SPECIFIC
   async getOneOrgUser(
     organizationId: string,
     userId: string,
