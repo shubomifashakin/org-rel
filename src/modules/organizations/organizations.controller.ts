@@ -129,7 +129,6 @@ export class OrganizationsController {
   }
 
   @Patch(':organizationId/users/invites/:inviteId') //update the status of an invite, only the user it was sent to can update it
-  @UseGuards(IsMemberGuard) //FIXME: CONFIRM IF PROPERLY IMPLEMENTED
   updateInvite(
     @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
     @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
