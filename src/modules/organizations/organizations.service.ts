@@ -112,6 +112,57 @@ export class OrganizationsService {
     return { id: org.id };
   }
 
+  async getOrganizationsUserIsMemberOf(userId: string, next?: string) {
+    const limit = 10;
+
+    const orgs = await this.databaseService.organizationsOnUsers.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        role: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+        assignedAt: true,
+      },
+      take: limit + 1,
+      cursor: next
+        ? {
+            organizationId_userId: {
+              organizationId: next,
+              userId: userId,
+            },
+          }
+        : undefined,
+      orderBy: {
+        assignedAt: 'desc',
+      },
+    });
+
+    const transformed = orgs.slice(0, limit).map((org) => {
+      return {
+        role: org.role,
+        id: org.organization.id,
+        name: org.organization.name,
+        image: org.organization.image,
+        assignedAt: org.assignedAt,
+      };
+    });
+
+    const cursor = orgs[orgs.length - 1]?.organization.id;
+
+    return {
+      organizations: transformed,
+      hasNextPage: orgs.length > limit,
+      ...(cursor && { cursor }),
+    };
+  }
+
   async getOneOrganization(id: string) {
     const { status, error, data } =
       await this.redisService.getFromCache<CachedOrg>(

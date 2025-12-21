@@ -55,6 +55,17 @@ export class OrganizationsController {
     );
   }
 
+  @Get() //get all organizations user is a member of
+  getAllOrganizationsUserIsMemberOf(
+    @Req() req: Request,
+    @ValidateUUIDQueryParam('next', null, true) next?: string,
+  ) {
+    return this.organizationsService.getOrganizationsUserIsMemberOf(
+      req.user.id,
+      next,
+    );
+  }
+
   @Get(':organizationId') //get a particular org
   @UseGuards(IsMemberGuard)
   getOneOrganization(
