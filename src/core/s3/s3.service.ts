@@ -25,12 +25,11 @@ export class S3Service extends S3Client implements OnModuleDestroy {
   }
 
   async uploadToS3(
+    bucket: string,
     image: Express.Multer.File,
     key = uuid(),
   ): Promise<FnResult<string>> {
     try {
-      const bucket = env.S3_BUCKET_NAME;
-
       await this.send(
         new PutObjectCommand({
           Key: key,

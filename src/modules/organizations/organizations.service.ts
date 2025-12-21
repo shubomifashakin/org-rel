@@ -1,9 +1,9 @@
 import {
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuid } from 'uuid';
 
 import { DatabaseService } from '../../core/database/database.service.js';
@@ -50,28 +50,16 @@ export class OrganizationsService {
     private readonly redisService: RedisService,
   ) {}
 
-  private async uploadToS3(
-    image: Express.Multer.File,
-  ): Promise<string | undefined> {
-    try {
-      const imageKey = uuid();
-      const bucket = env.S3_BUCKET_NAME;
+  private async uploadToS3(image: Express.Multer.File) {
+    const imageKey = uuid();
 
-      await this.s3Service.send(
-        new PutObjectCommand({
-          Key: imageKey,
-          Bucket: bucket,
-          Body: image.buffer,
-          ContentType: image.mimetype,
-        }),
-      );
+    const result = await this.s3Service.uploadToS3(
+      env.S3_BUCKET_NAME,
+      image,
+      imageKey,
+    );
 
-      return `https://${bucket}.s3.amazonaws.com/${imageKey}`;
-    } catch (error) {
-      console.error(error);
-      //FIXME: LOG ERROR PROPERLY
-      return undefined;
-    }
+    return result;
   }
 
   private makeUserCacheKey(orgId: string, userId: string) {
@@ -98,7 +86,15 @@ export class OrganizationsService {
     let s3Url: string | undefined = undefined;
 
     if (image) {
-      s3Url = await this.uploadToS3(image);
+      const { status, error, data } = await this.uploadToS3(image);
+
+      if (!status) {
+        console.error(error);
+      }
+
+      if (status) {
+        s3Url = data;
+      }
     }
 
     const org = await this.databaseService.organizations.create({
@@ -180,7 +176,13 @@ export class OrganizationsService {
     let s3Url: string | undefined = undefined;
 
     if (image) {
-      s3Url = await this.uploadToS3(image);
+      const { status, error, data } = await this.uploadToS3(image);
+      if (!status) {
+        console.error(error);
+        throw new InternalServerErrorException('Internal Server Error');
+      }
+
+      s3Url = data;
     }
 
     const org = (await this.databaseService.organizations.update({
@@ -553,7 +555,15 @@ export class OrganizationsService {
     let s3Url: string | undefined = undefined;
 
     if (image) {
-      s3Url = await this.uploadToS3(image);
+      const { status, error, data } = await this.uploadToS3(image);
+
+      if (!status) {
+        console.error(error);
+      }
+
+      if (status) {
+        s3Url = data;
+      }
     }
 
     const project = (await this.databaseService.projects.create({
@@ -637,7 +647,14 @@ export class OrganizationsService {
     let s3Url: string | undefined = undefined;
 
     if (image) {
-      s3Url = await this.uploadToS3(image);
+      const { status, error, data } = await this.uploadToS3(image);
+
+      if (!status) {
+        console.error(error);
+        throw new InternalServerErrorException('Internal Server Error');
+      }
+
+      s3Url = data;
     }
 
     const project = (await this.databaseService.projects.update({
