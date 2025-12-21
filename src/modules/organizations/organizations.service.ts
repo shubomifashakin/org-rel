@@ -18,22 +18,10 @@ import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 
 import { cacheKeys } from './utils.js';
-import {
-  Organizations,
-  Projects,
-  Roles,
-} from '../../../generated/prisma/client.js';
+import { Organizations, Projects } from '../../../generated/prisma/client.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
 import { UpdateInviteDto } from './dto/update-invite.dto.js';
-
-type CachedUser = {
-  id: string;
-  email: string;
-  fullname: string;
-  image: string | null;
-  username: string;
-  role: Roles;
-};
+import { CachedUser } from './types/index.js';
 
 type CachedProject = Pick<
   Projects,
@@ -63,11 +51,11 @@ export class OrganizationsService {
   }
 
   private makeUserCacheKey(orgId: string, userId: string) {
-    return `${cacheKeys.ORGANIZATION}${orgId}${cacheKeys.USER}${userId}`;
+    return `${cacheKeys.ORGANIZATION}${orgId}:${cacheKeys.USER}${userId}`;
   }
 
   private makeProjectCacheKey(orgId: string, projectId: string) {
-    return `${cacheKeys.ORGANIZATION}${orgId}${cacheKeys.PROJECT}${projectId}`;
+    return `${cacheKeys.ORGANIZATION}${orgId}:${cacheKeys.PROJECT}${projectId}`;
   }
 
   private makeOrganizationCacheKey(orgId: string) {

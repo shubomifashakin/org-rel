@@ -18,6 +18,7 @@ import {
 
 import { OrganizationsService } from './organizations.service.js';
 
+import { NeedsRoles } from './common/decorators/role.decorator.js';
 import { ValidateUUID } from './common/decorators/uuid-validator.decorator.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
@@ -32,9 +33,10 @@ import { Organizations, Roles } from '../../../generated/prisma/client.js';
 import { Projects } from '../../../generated/prisma/client.js';
 import { GetImage } from '../../common/decorators/get-image.decorator.js';
 import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
+import { RolesGuard } from './common/guards/role.guard.js';
 
 @Controller('organizations')
-@UseGuards(UserAuthGuard)
+@UseGuards(UserAuthGuard, RolesGuard)
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
@@ -53,17 +55,18 @@ export class OrganizationsController {
     );
   }
 
-  @Get(':id') //get a particular org
+  @Get(':organizationId') //get a particular org
   getOneOrganization(
-    @ValidateUUID('id', 'Invalid organization id') id: string,
+    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
   ): Promise<Pick<Organizations, 'id' | 'name' | 'image'>> {
     return this.organizationsService.getOneOrganization(id);
   }
 
-  @Patch(':id') //update an org
+  @Patch(':organizationId') //update an org
+  @NeedsRoles('ADMIN')
   @GetImage()
   updateOneOrganization(
-    @ValidateUUID('id', 'Invalid organization id') id: string,
+    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
     @Body() updateOrganizationDto: UpdateOrganizationDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
@@ -74,17 +77,19 @@ export class OrganizationsController {
     );
   }
 
-  @Delete(':id') //delete an org
+  @Delete(':organizationId') //delete an org
+  @NeedsRoles('ADMIN')
   deleteOneOrganization(
-    @ValidateUUID('id', 'Invalid organization id') id: string,
+    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
   ) {
     return this.organizationsService.deleteOneOrganization(id);
   }
 
   //USERS
-  @Get(':id/users') //get all the users in an org
+  @Get(':organizationId/users') //get all the users in an org
   getOrgUsers(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @Query('next', ParseUUIDPipe) next?: string,
   ): Promise<{
     cursor?: string;
@@ -102,10 +107,11 @@ export class OrganizationsController {
   }
 
   //USERS / INVITES
-  @Post(':id/users/invites')
+  @Post(':organizationId/users/invites') //send an invite to a user
+  @NeedsRoles('ADMIN')
   inviteOneUser(
     @Req() req: Request,
-    @ValidateUUID('id', 'Invalid organization id') id: string,
+    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
     @Body() inviteUserDto: InviteUserDto,
   ) {
     return this.organizationsService.inviteOneUser(
@@ -115,17 +121,17 @@ export class OrganizationsController {
     );
   }
 
-  @Get(':id/users/invites')
+  @Get(':organizationId/users/invites') //get all invites that have been sent out
   getAllInvites(
-    @ValidateUUID('id', 'Invalid organization id') id: string,
+    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
     @Query('next', ParseUUIDPipe) next?: string,
   ) {
     return this.organizationsService.getAllInvites(id, next);
   }
 
-  @Post(':id/users/invites/:inviteId')
+  @Post(':organizationId/users/invites/:inviteId')
   updateInvite(
-    @ValidateUUID('id', 'Invalid organization id') orgId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
     @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
     @Body() updateInviteDto: UpdateInviteDto,
   ) {
@@ -138,17 +144,20 @@ export class OrganizationsController {
 
   //USERS / USERID
 
-  @Get(':id/users/:userId') //get a user in an org
+  @Get(':organizationId/users/:userId') //get a user in an org
   getOneOrgUser(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @ValidateUUID('userId', 'Invalid user id') userId: string,
   ) {
     return this.organizationsService.getOneOrgUser(organizationId, userId);
   }
 
-  @Patch(':id/users/:userId') //update a user in an org
+  @Patch(':organizationId/users/:userId') //update a user in an org
+  @NeedsRoles('ADMIN')
   updateOneOrgUser(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @ValidateUUID('userId', 'Invalid user id') userId: string,
     @Body() updateOrgUserDto: UpdateOrgUserDto,
   ): Promise<{ message: string }> {
@@ -160,18 +169,21 @@ export class OrganizationsController {
   }
 
   @Throttle({ default: { limit: 5, ttl: seconds(30) } })
-  @Delete(':id/users/:userId') //delete a user in an org
+  @Delete(':organizationId/users/:userId') //delete a user in an org
+  @NeedsRoles('ADMIN')
   deleteOneOrgUser(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @ValidateUUID('userId', 'Invalid user id') userId: string,
   ): Promise<{ message: string }> {
     return this.organizationsService.deleteOneOrgUser(organizationId, userId);
   }
 
   //PROJECTS
-  @Get(':id/projects') //get the projects in an org
+  @Get(':organizationId/projects') //get the projects in an org
   getOrgProjects(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @Query('next', ParseUUIDPipe) next?: string,
   ): Promise<{
     projects: Pick<
@@ -185,10 +197,11 @@ export class OrganizationsController {
   }
 
   @Throttle({ default: { limit: 5, ttl: seconds(10) } })
-  @Post(':id/projects') //create a project in an org
+  @Post(':organizationId/projects') //create a project in an org
   @GetImage()
   createOrgProject(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @Body() createProjectDto: CreateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
@@ -199,9 +212,10 @@ export class OrganizationsController {
     );
   }
 
-  @Get(':id/projects/:projectId') //get a project in an org
+  @Get(':organizationId/projects/:projectId') //get a project in an org
   getOneOrgProject(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @ValidateUUID('projectId', 'Invalid project id') projectId: string,
   ) {
     return this.organizationsService.getOneOrgProject(
@@ -210,10 +224,12 @@ export class OrganizationsController {
     );
   }
 
-  @Patch(':id/projects/:projectId') //update a project in an org
+  @Patch(':organizationId/projects/:projectId') //update a project in an org
+  @NeedsRoles('ADMIN')
   @GetImage()
   updateOneOrgProject(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @ValidateUUID('projectId', 'Invalid project id') projectId: string,
     @Body() updateProjectDto: UpdateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
@@ -226,9 +242,11 @@ export class OrganizationsController {
     );
   }
 
-  @Delete(':id/projects/:projectId')
+  @Delete(':organizationId/projects/:projectId') //delete a project in an org
+  @NeedsRoles('ADMIN')
   deleteOneOrgProject(
-    @ValidateUUID('id', 'Invalid organization id') organizationId: string,
+    @ValidateUUID('organizationId', 'Invalid organization id')
+    organizationId: string,
     @ValidateUUID('projectId', 'Invalid project id') projectId: string,
   ) {
     return this.organizationsService.deleteOneOrgProject(
