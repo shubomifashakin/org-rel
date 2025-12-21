@@ -27,12 +27,13 @@ import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
 import { UpdateInviteDto } from './dto/update-invite.dto.js';
 
-import { Organizations, Roles } from '../../../generated/prisma/client.js';
+import { Organizations } from '../../../generated/prisma/client.js';
 import { Projects } from '../../../generated/prisma/client.js';
 import { GetImage } from '../../common/decorators/get-image.decorator.js';
 import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
 import { RolesGuard } from './common/guards/role.guard.js';
 import { IsMemberGuard } from './common/guards/is-member.guard.js';
+import { CachedUser } from './types/index.js';
 
 @Controller('organizations')
 @UseGuards(UserAuthGuard)
@@ -97,14 +98,7 @@ export class OrganizationsController {
   ): Promise<{
     cursor?: string;
     hasNextPage: boolean;
-    users: Array<{
-      role: Roles;
-      id: string;
-      image: string | null;
-      email: string;
-      username: string;
-      fullname: string;
-    }>;
+    users: Array<CachedUser>;
   }> {
     return this.organizationsService.getOrgUsers(organizationId, next);
   }
