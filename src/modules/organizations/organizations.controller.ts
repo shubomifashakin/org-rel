@@ -9,7 +9,6 @@ import {
   Delete,
   UploadedFile,
   HttpCode,
-  UploadedFiles,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -45,7 +44,7 @@ export class OrganizationsController {
   createOrganization(
     @Body() createOrganizationDto: CreateOrganizationDto,
     @Req() request: Request,
-    @UploadedFiles() image?: Express.Multer.File,
+    @UploadedFile() image?: Express.Multer.File,
   ) {
     return this.organizationsService.createOrganization(
       createOrganizationDto,
