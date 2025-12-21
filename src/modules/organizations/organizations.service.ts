@@ -392,6 +392,22 @@ export class OrganizationsService {
     return { message: 'success' };
   }
 
+  async deleteInvite(organizationId: string, inviteId: string) {
+    const inviteExists = await this.databaseService.invites.findUnique({
+      where: { id: inviteId, organizationId },
+    });
+
+    if (!inviteExists) {
+      throw new NotFoundException('Invite does not exist');
+    }
+
+    await this.databaseService.invites.delete({
+      where: { id: inviteId, organizationId },
+    });
+
+    return { message: 'success' };
+  }
+
   //USER SPECIFIC
   async getOneOrgUser(
     organizationId: string,

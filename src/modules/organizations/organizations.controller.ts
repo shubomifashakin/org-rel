@@ -145,7 +145,15 @@ export class OrganizationsController {
     );
   }
 
-  //FIXME: IMPLEMENT DELETE INVITE
+  @Delete(':organizationId/users/invites/:inviteId') //delete an invite
+  @UseGuards(IsMemberGuard, RolesGuard)
+  @NeedsRoles('ADMIN')
+  deleteInvite(
+    @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
+    @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
+  ) {
+    return this.organizationsService.deleteInvite(orgId, inviteId);
+  }
 
   //USERS / USERID
   @Get(':organizationId/users/:userId') //get a user in an org
