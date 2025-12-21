@@ -40,7 +40,7 @@ type CachedProject = Pick<
   'id' | 'name' | 'image' | 'userId' | 'organizationId'
 >;
 
-type CachedOrg = Pick<Organizations, 'id' | 'name' | 'image'>;
+type CachedOrg = Pick<Organizations, 'id' | 'name' | 'image' | 'createdAt'>;
 
 @Injectable()
 export class OrganizationsService {
@@ -97,7 +97,7 @@ export class OrganizationsService {
       }
     }
 
-    const org = await this.databaseService.organizations.create({
+    const org = (await this.databaseService.organizations.create({
       data: {
         name: createOrganizationDto.name,
         image: s3Url,
@@ -112,8 +112,9 @@ export class OrganizationsService {
         id: true,
         name: true,
         image: true,
+        createdAt: true,
       },
-    });
+    })) satisfies CachedOrg;
 
     const { status, error } = await this.redisService.setInCache(
       this.makeOrganizationCacheKey(org.id),
@@ -141,20 +142,21 @@ export class OrganizationsService {
       return data;
     }
 
-    const organization = await this.databaseService.organizations.findUnique({
+    const organization = (await this.databaseService.organizations.findUnique({
       where: { id },
       select: {
         id: true,
         name: true,
         image: true,
+        createdAt: true,
       },
-    });
+    })) satisfies CachedOrg | null;
 
     if (!organization) {
       throw new NotFoundException('Organization not found');
     }
 
-    const cachedOrg = organization satisfies CachedOrg;
+    const cachedOrg = organization;
 
     const storeInCache = await this.redisService.setInCache(
       this.makeOrganizationCacheKey(id),
@@ -195,6 +197,7 @@ export class OrganizationsService {
         id: true,
         name: true,
         image: true,
+        createdAt: true,
       },
     })) satisfies CachedOrg;
 
