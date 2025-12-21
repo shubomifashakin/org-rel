@@ -143,7 +143,6 @@ export class OrganizationsController {
   }
 
   //USERS / USERID
-
   @Get(':organizationId/users/:userId') //get a user in an org
   @UseGuards(IsMemberGuard)
   getOneOrgUser(

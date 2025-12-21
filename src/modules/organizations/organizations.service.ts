@@ -19,7 +19,11 @@ import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 
-import { cacheKeys } from './utils.js';
+import {
+  makeOrganizationCacheKey,
+  makeProjectCacheKey,
+  makeUserCacheKey,
+} from './common/utils.js';
 import { Organizations, Projects } from '../../../generated/prisma/client.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
 import { UpdateInviteDto } from './dto/update-invite.dto.js';
@@ -50,18 +54,6 @@ export class OrganizationsService {
     );
 
     return result;
-  }
-
-  private makeUserCacheKey(orgId: string, userId: string) {
-    return `${cacheKeys.ORGANIZATION}${orgId}:${cacheKeys.USER}${userId}`;
-  }
-
-  private makeProjectCacheKey(orgId: string, projectId: string) {
-    return `${cacheKeys.ORGANIZATION}${orgId}:${cacheKeys.PROJECT}${projectId}`;
-  }
-
-  private makeOrganizationCacheKey(orgId: string) {
-    return `${cacheKeys.ORGANIZATION}${orgId}`;
   }
 
   async createOrganization(
@@ -107,7 +99,7 @@ export class OrganizationsService {
     })) satisfies CachedOrg;
 
     const { status, error } = await this.redisService.setInCache(
-      this.makeOrganizationCacheKey(org.id),
+      makeOrganizationCacheKey(org.id),
       org,
     );
 
@@ -121,7 +113,7 @@ export class OrganizationsService {
   async getOneOrganization(id: string) {
     const { status, error, data } =
       await this.redisService.getFromCache<CachedOrg>(
-        this.makeOrganizationCacheKey(id),
+        makeOrganizationCacheKey(id),
       );
 
     if (!status) {
@@ -149,7 +141,7 @@ export class OrganizationsService {
     const cachedOrg = organization;
 
     const storeInCache = await this.redisService.setInCache(
-      this.makeOrganizationCacheKey(id),
+      makeOrganizationCacheKey(id),
       cachedOrg,
     );
 
@@ -192,7 +184,7 @@ export class OrganizationsService {
     })) satisfies CachedOrg;
 
     const { status, error } = await this.redisService.setInCache(
-      this.makeOrganizationCacheKey(id),
+      makeOrganizationCacheKey(id),
       org,
     );
 
@@ -217,7 +209,7 @@ export class OrganizationsService {
     });
 
     const { status, error } = await this.redisService.deleteFromCache(
-      this.makeOrganizationCacheKey(id),
+      makeOrganizationCacheKey(id),
     );
 
     if (!status) {
@@ -375,7 +367,7 @@ export class OrganizationsService {
   ): Promise<CachedUser> {
     const { status, data, error } =
       await this.redisService.getFromCache<CachedUser>(
-        this.makeUserCacheKey(organizationId, userId),
+        makeUserCacheKey(organizationId, userId),
       );
 
     if (!status) {
@@ -420,7 +412,7 @@ export class OrganizationsService {
     } satisfies CachedUser;
 
     const storeInCache = await this.redisService.setInCache(
-      this.makeUserCacheKey(organizationId, userId),
+      makeUserCacheKey(organizationId, userId),
       cachedUser,
       MINUTES_10,
     );
@@ -467,7 +459,7 @@ export class OrganizationsService {
     } satisfies CachedUser;
 
     const { status, error } = await this.redisService.setInCache(
-      this.makeUserCacheKey(organizationId, userId),
+      makeUserCacheKey(organizationId, userId),
       updatedUser,
       MINUTES_10,
     );
@@ -504,7 +496,7 @@ export class OrganizationsService {
     });
 
     const { status, error } = await this.redisService.deleteFromCache(
-      this.makeUserCacheKey(organizationId, userId),
+      makeUserCacheKey(organizationId, userId),
     );
 
     if (!status) {
@@ -592,7 +584,7 @@ export class OrganizationsService {
     })) satisfies CachedProject;
 
     const { status, error } = await this.redisService.setInCache(
-      this.makeProjectCacheKey(organizationId, project.id),
+      makeProjectCacheKey(organizationId, project.id),
       project,
     );
 
@@ -609,7 +601,7 @@ export class OrganizationsService {
   ): Promise<CachedProject> {
     const { status, error, data } =
       await this.redisService.getFromCache<CachedProject>(
-        this.makeProjectCacheKey(organizationId, projectId),
+        makeProjectCacheKey(organizationId, projectId),
       );
 
     if (!status) {
@@ -636,7 +628,7 @@ export class OrganizationsService {
     }
 
     const storeInCache = await this.redisService.setInCache(
-      this.makeProjectCacheKey(organizationId, projectId),
+      makeProjectCacheKey(organizationId, projectId),
       project,
     );
 
@@ -704,7 +696,7 @@ export class OrganizationsService {
     })) satisfies CachedProject;
 
     const { status, error } = await this.redisService.setInCache(
-      this.makeProjectCacheKey(orgId, projectId),
+      makeProjectCacheKey(orgId, projectId),
       project,
     );
 
@@ -735,7 +727,7 @@ export class OrganizationsService {
     });
 
     const { status, error } = await this.redisService.deleteFromCache(
-      this.makeProjectCacheKey(organizationId, projectId),
+      makeProjectCacheKey(organizationId, projectId),
     );
 
     if (!status) {

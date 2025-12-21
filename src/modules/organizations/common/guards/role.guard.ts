@@ -13,7 +13,7 @@ import { RedisService } from '../../../../core/redis/redis.service.js';
 import { MINUTES_10 } from '../../../../common/utils/constants.js';
 
 import { ROLES_KEY } from '../decorators/role.decorator.js';
-import { cacheKeys } from '../../utils.js';
+import { makeUserCacheKey } from '../utils.js';
 import { CachedUser } from '../../types/index.js';
 import { Roles } from '../../../../../generated/prisma/enums.js';
 
@@ -44,7 +44,7 @@ export class RolesGuard implements CanActivate {
       throw new BadRequestException('Invalid Organization Id');
     }
 
-    const cacheIdentifier = `${cacheKeys.ORGANIZATION}${organizationId}:${cacheKeys.USER}${userId}`;
+    const cacheIdentifier = makeUserCacheKey(organizationId, userId);
     const cachedUserRole =
       await this.redisService.getFromCache<CachedUser>(cacheIdentifier);
 

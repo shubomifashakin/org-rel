@@ -4,7 +4,7 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { MINUTES_10 } from '../../../../common/utils/constants.js';
 import { DatabaseService } from '../../../../core/database/database.service.js';
 import { RedisService } from '../../../../core/redis/redis.service.js';
-import { cacheKeys } from '../../utils.js';
+import { makeUserCacheKey } from '../utils.js';
 import { CachedUser } from '../../types/index.js';
 
 @Injectable()
@@ -20,7 +20,7 @@ export class IsMemberGuard implements CanActivate {
     const userId = request.user.id;
     const { organizationId } = request.params;
 
-    const cacheIdentifier = `${cacheKeys.ORGANIZATION}${organizationId}:${cacheKeys.USER}${userId}`;
+    const cacheIdentifier = makeUserCacheKey(organizationId, userId);
 
     const { status, data, error } =
       await this.redisService.getFromCache<CachedUser>(cacheIdentifier);
