@@ -201,7 +201,8 @@ export class OrganizationsController {
 
   @Throttle({ default: { limit: 5, ttl: 10 } })
   @Post(':organizationId/projects') //create a project in an org
-  @UseGuards(IsMemberGuard)
+  @UseGuards(IsMemberGuard, RolesGuard)
+  @NeedsRoles('ADMIN')
   @GetImage()
   createOrgProject(
     @ValidateUUID('organizationId', 'Invalid organization id')
