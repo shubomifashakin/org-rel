@@ -68,7 +68,7 @@ export class OrganizationsService {
     image?: Express.Multer.File,
   ) {
     if (!userId) {
-      throw new UnauthorizedException('User not authenticated');
+      throw new UnauthorizedException('Unauthorized');
     }
 
     let s3Url: string | undefined = undefined;
