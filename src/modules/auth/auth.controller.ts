@@ -8,6 +8,7 @@ import {
   Post,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
 } from '@nestjs/common';
 
@@ -18,6 +19,7 @@ import { SignInDto } from './common/dtos/sign-in.dto.js';
 import { TOKEN } from '../../common/utils/constants.js';
 import { UserAgent } from '../../common/decorators/user-agent.decorator.js';
 import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
+import { GetImage } from '../../common/decorators/get-image.decorator.js';
 
 @Controller('auth')
 export class AuthController {
@@ -25,13 +27,20 @@ export class AuthController {
 
   @Throttle({ default: { limit: 5, ttl: 15 } })
   @Post('sign-up')
+  @GetImage()
   async signUp(
     @Body() signUpDto: SignUpDto,
     @Res() response: Response,
     @Ip() ipAddr: string,
+    @UploadedFile() file?: Express.Multer.File,
     @UserAgent() userAgent?: string,
   ) {
-    const res = await this.authService.signUp(signUpDto, ipAddr, userAgent);
+    const res = await this.authService.signUp(
+      signUpDto,
+      ipAddr,
+      file,
+      userAgent,
+    );
 
     response.cookie(TOKEN.REFRESH.TYPE, res.tokens.refreshToken, {
       secure: true,

@@ -31,6 +31,7 @@ import { DatabaseService } from '../../core/database/database.service.js';
 import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { MailerService } from '../../core/mailer/mailer.service.js';
+import { S3Service } from '../../core/s3/s3.service.js';
 
 import { DAYS_14_MS, MINUTES_10_MS } from '../../common/utils/constants.js';
 import { TOKEN } from '../../common/utils/constants.js';
@@ -45,6 +46,7 @@ export class AuthService {
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
     private readonly mailerService: MailerService,
+    private readonly s3Service: S3Service,
     private readonly secretsManagerService: SecretsManagerService,
   ) {}
 
@@ -138,8 +140,28 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async signUp(signUpDto: SignUpDto, ipAddr: string, userAgent?: string) {
+  async signUp(
+    signUpDto: SignUpDto,
+    ipAddr: string,
+    file?: Express.Multer.File,
+    userAgent?: string,
+  ) {
     try {
+      let s3Url: string | undefined;
+
+      if (file) {
+        const { status, data, error } = await this.s3Service.uploadToS3(
+          env.S3_BUCKET_NAME,
+          file,
+        );
+
+        if (!status) {
+          console.error(error);
+        } else {
+          s3Url = data;
+        }
+      }
+
       const { status, data, error } = await hashString(signUpDto.password);
 
       if (!status) {
@@ -155,6 +177,7 @@ export class AuthService {
           email: signUpDto.email,
           fullname: signUpDto.fullname,
           username: signUpDto.username,
+          image: s3Url,
         },
         select: {
           id: true,

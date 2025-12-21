@@ -6,9 +6,16 @@ import { DatabaseModule } from '../../core/database/database.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
 import { MailerModule } from '../../core/mailer/mailer.module.js';
 import { RedisModule } from '../../core/redis/redis.module.js';
+import { S3Module } from '../../core/s3/s3.module.js';
 
 @Module({
-  imports: [DatabaseModule, SecretsManagerModule, MailerModule, RedisModule],
+  imports: [
+    DatabaseModule,
+    SecretsManagerModule,
+    MailerModule,
+    RedisModule,
+    S3Module,
+  ],
   providers: [AuthService],
   controllers: [AuthController],
 })
