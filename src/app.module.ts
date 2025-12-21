@@ -39,9 +39,15 @@ import { MailerModule } from './core/mailer/mailer.module.js';
             },
           ],
           errorMessage: 'Too many requests',
-          generateKey: (ctx) => {
+          generateKey: (ctx, _, throttlerName) => {
             const req = ctx.switchToHttp().getRequest<Request>();
-            return req?.user?.id || req?.ip || req?.ips?.[0] || 'unknown-ip';
+            const key =
+              req?.user?.id || req?.ip || req?.ips?.[0] || 'unknown-ip';
+
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            const route = req.route?.path || req.path;
+
+            return `${throttlerName}:${route}:${key}`.toLowerCase();
           },
 
           storage: {
