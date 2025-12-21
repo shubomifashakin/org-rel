@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -271,12 +272,12 @@ export class OrganizationsService {
     organizationId: string,
     inviteUserDto: InviteUserDto,
   ) {
-    const usersName = await this.databaseService.users.findUnique({
+    const usersFullName = await this.databaseService.users.findUnique({
       where: { id: userId },
       select: { fullname: true },
     });
 
-    if (!usersName) {
+    if (!usersFullName) {
       throw new NotFoundException('User Not Found');
     }
 
@@ -297,14 +298,19 @@ export class OrganizationsService {
     const invitedUsersEmail = inviteUserDto.email;
     const invitedUsersRole = inviteUserDto.role;
 
-    await this.databaseService.invites.create({
+    const inviteId = await this.databaseService.invites.create({
       data: {
         organizationId,
         email: invitedUsersEmail,
-        invitedByUserId: userId,
+        inviterId: userId,
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
       },
+      select: {
+        id: true,
+      },
     });
+
+    console.log('inviteId', inviteId);
 
     //FIXME: SEND A MAIL TO THE INVITED USER
     //send a mail to the user stating the role they are being invited for and the person inviting them
@@ -323,7 +329,7 @@ export class OrganizationsService {
         expiresAt: true,
         createdAt: true,
         updatedAt: true,
-        invitedByUserId: true,
+        inviterId: true,
       },
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
@@ -349,18 +355,41 @@ export class OrganizationsService {
     organizationId: string,
     inviteId: string,
     updateInvite: UpdateInviteDto,
+    email: string,
   ) {
+    const inviteExistsForUser = await this.databaseService.invites.findFirst({
+      where: {
+        id: inviteId,
+        email,
+        organizationId,
+      },
+    });
+
+    if (!inviteExistsForUser) {
+      throw new NotFoundException('Invite Not Found');
+    }
+
+    if (
+      inviteExistsForUser.status === 'ACCEPTED' ||
+      inviteExistsForUser.status === 'REJECTED'
+    ) {
+      throw new BadRequestException(
+        `Invite already ${inviteExistsForUser.status.toLocaleLowerCase()}`,
+      );
+    }
+
     await this.databaseService.invites.update({
       where: {
         id: inviteId,
         organizationId,
+        email,
       },
       data: {
         status: updateInvite.status,
       },
     });
 
-    return { message: 'status' };
+    return { message: 'success' };
   }
 
   //USER SPECIFIC

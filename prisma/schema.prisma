@@ -97,8 +97,8 @@ model Invites {
   organizationId String
   organization   Organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  invitedByUserId String?
-  invitedBy       Users?  @relation(fields: [invitedByUserId], references: [id], onDelete: SetNull)
+  inviterId String?
+  inviter       Users?  @relation(fields: [inviterId], references: [id], onDelete: SetNull)
 
   @@unique([organizationId, email])
 }

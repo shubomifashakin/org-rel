@@ -128,19 +128,24 @@ export class OrganizationsController {
     return this.organizationsService.getAllInvites(id, next);
   }
 
-  @Post(':organizationId/users/invites/:inviteId') //update the status of an invite
+  @Patch(':organizationId/users/invites/:inviteId') //update the status of an invite, only the user it was sent to can update it
   @UseGuards(IsMemberGuard) //FIXME: CONFIRM IF PROPERLY IMPLEMENTED
   updateInvite(
     @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
     @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
     @Body() updateInviteDto: UpdateInviteDto,
+    @Req() req: Request,
   ) {
+    const email = req.user.email;
     return this.organizationsService.updateInvite(
       orgId,
       inviteId,
       updateInviteDto,
+      email,
     );
   }
+
+  //FIXME: IMPLEMENT DELETE INVITE
 
   //USERS / USERID
   @Get(':organizationId/users/:userId') //get a user in an org
