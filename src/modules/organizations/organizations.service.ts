@@ -323,16 +323,16 @@ export class OrganizationsService {
     organizationId: string,
     inviteUserDto: InviteUserDto,
   ) {
-    const invitersFullName = await this.databaseService.users.findUnique({
+    const invitersInfo = await this.databaseService.users.findUnique({
       where: { id: userId },
       select: { fullname: true, email: true },
     });
 
-    if (!invitersFullName) {
+    if (!invitersInfo) {
       throw new NotFoundException('Inviter does not exist');
     }
 
-    if (invitersFullName.email === inviteUserDto.email) {
+    if (invitersInfo.email === inviteUserDto.email) {
       throw new BadRequestException('You cannot invite yourself');
     }
 
@@ -358,6 +358,7 @@ export class OrganizationsService {
         organizationId,
         email: invitedUsersEmail,
         inviterId: userId,
+        role: invitedUsersRole,
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
       },
       select: {
@@ -385,6 +386,7 @@ export class OrganizationsService {
         createdAt: true,
         updatedAt: true,
         inviterId: true,
+        role: true,
       },
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
@@ -406,11 +408,13 @@ export class OrganizationsService {
     };
   }
 
-  async updateInvite(
+  //FIXME: SHOULD BE IN ACCOUNTS CONTROLLER
+  async updateInviteStatus(
     organizationId: string,
     inviteId: string,
     updateInvite: UpdateInviteDto,
     email: string,
+    userId: string,
   ) {
     const inviteExistsForUser = await this.databaseService.invites.findFirst({
       where: {
@@ -424,24 +428,41 @@ export class OrganizationsService {
       throw new NotFoundException('Invite does not exist');
     }
 
-    if (
-      inviteExistsForUser.status === 'ACCEPTED' ||
-      inviteExistsForUser.status === 'REJECTED'
-    ) {
+    if (new Date() > inviteExistsForUser.expiresAt) {
+      throw new BadRequestException('Invite has expired');
+    }
+
+    if (inviteExistsForUser.status !== 'PENDING') {
       throw new BadRequestException(
         `Invite already ${inviteExistsForUser.status.toLocaleLowerCase()}`,
       );
     }
 
-    await this.databaseService.invites.update({
-      where: {
-        id: inviteId,
-        organizationId,
-        email,
-      },
-      data: {
-        status: updateInvite.status,
-      },
+    await this.databaseService.$transaction(async (tx) => {
+      const status = await tx.invites.update({
+        where: {
+          id: inviteId,
+          organizationId,
+          email,
+        },
+        data: {
+          status: updateInvite.status,
+        },
+        select: {
+          role: true,
+          status: true,
+        },
+      });
+
+      if (status.status === 'ACCEPTED') {
+        await tx.organizationsOnUsers.create({
+          data: {
+            organizationId,
+            userId,
+            role: status.role,
+          },
+        });
+      }
     });
 
     return { message: 'success' };

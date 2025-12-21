@@ -92,6 +92,8 @@ model Invites {
 
   expiresAt DateTime
 
+  role Roles
+
   status InviteStatus @default(PENDING)
 
   organizationId String

@@ -139,19 +139,21 @@ export class OrganizationsController {
     return this.organizationsService.getAllInvites(id, next);
   }
 
-  @Patch(':organizationId/users/invites/:inviteId') //update the status of an invite, only the user it was sent to can update it
-  updateInvite(
+  //FIXME: REMOVE FROM HERE, SHOULD BE IN accounts CONTROLLER
+  @Patch(':organizationId/users/invites/:inviteId')
+  updateInviteStatus(
     @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
     @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
     @Body() updateInviteDto: UpdateInviteDto,
     @Req() req: Request,
   ) {
     const email = req.user.email;
-    return this.organizationsService.updateInvite(
+    return this.organizationsService.updateInviteStatus(
       orgId,
       inviteId,
       updateInviteDto,
       email,
+      req.user.id,
     );
   }
 
