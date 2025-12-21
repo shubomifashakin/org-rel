@@ -25,7 +25,7 @@ import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
-import { InviteUserDto } from './dto/invite_user.dto.js';
+import { InviteUserDto } from './dto/invite-user.dto.js';
 import { UpdateInviteDto } from './dto/update-invite.dto.js';
 
 import { Organizations, Roles } from '../../../generated/prisma/client.js';

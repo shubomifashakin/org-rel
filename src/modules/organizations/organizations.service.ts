@@ -20,7 +20,7 @@ import {
   Projects,
   Roles,
 } from '../../../generated/prisma/client.js';
-import { InviteUserDto } from './dto/invite_user.dto.js';
+import { InviteUserDto } from './dto/invite-user.dto.js';
 import { UpdateInviteDto } from './dto/update-invite.dto.js';
 
 type CachedUser = {
