@@ -28,6 +28,7 @@ import { Organizations, Projects } from '../../../generated/prisma/client.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
 import { UpdateInviteDto } from './dto/update-invite.dto.js';
 import { CachedUser } from './types/index.js';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
 
 type CachedProject = Pick<
   Projects,
@@ -429,46 +430,56 @@ export class OrganizationsService {
     userId: string,
     updateOrgUserDto: UpdateOrgUserDto,
   ) {
-    const user = await this.databaseService.organizationsOnUsers.update({
-      where: {
-        organizationId_userId: {
-          userId,
-          organizationId,
-        },
-      },
-      data: {
-        role: updateOrgUserDto.role,
-      },
-      select: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            image: true,
-            fullname: true,
-            username: true,
+    try {
+      const user = await this.databaseService.organizationsOnUsers.update({
+        where: {
+          organizationId_userId: {
+            userId,
+            organizationId,
           },
         },
-        role: true,
-      },
-    });
+        data: {
+          role: updateOrgUserDto.role,
+        },
+        select: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              image: true,
+              fullname: true,
+              username: true,
+            },
+          },
+          role: true,
+        },
+      });
 
-    const updatedUser = {
-      ...user.user,
-      role: user.role,
-    } satisfies CachedUser;
+      const updatedUser = {
+        ...user.user,
+        role: user.role,
+      } satisfies CachedUser;
 
-    const { status, error } = await this.redisService.setInCache(
-      makeUserCacheKey(organizationId, userId),
-      updatedUser,
-      MINUTES_10,
-    );
+      const { status, error } = await this.redisService.setInCache(
+        makeUserCacheKey(organizationId, userId),
+        updatedUser,
+        MINUTES_10,
+      );
 
-    if (!status) {
-      console.error(error);
+      if (!status) {
+        console.error(error);
+      }
+
+      return { message: 'Success' };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('User Not Found');
+        }
+      }
+
+      throw error;
     }
-
-    return { message: 'Success' };
   }
 
   async deleteOneOrgUser(organizationId: string, userId: string) {
