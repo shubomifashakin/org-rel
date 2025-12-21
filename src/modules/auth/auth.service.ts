@@ -179,20 +179,19 @@ export class AuthService {
 
   async signIn(body: SignInDto, ipAddr: string, userAgent?: string) {
     const attemptKey = `attempts:${body.username}:${ipAddr}`;
-    const attempts = await this.redisService
-      .getFromCache<number>(attemptKey)
-      .catch((error) => {
-        console.error(`failed to get attempts for ${attemptKey}`, error);
-        return undefined;
-      });
+    const attempts = await this.redisService.getFromCache<number>(attemptKey);
 
-    const currentAttempts = attempts || 1;
+    if (!attempts.status) {
+      console.error(attempts.error);
+    }
+
+    const currentAttempts = attempts.data || 1;
 
     if (currentAttempts >= 5) {
       throw new ThrottlerException('Too many login attempts');
     }
 
-    const totalAttempts = attempts ? attempts + 1 : 1;
+    const totalAttempts = attempts.data ? attempts.data + 1 : 1;
 
     const existingUser = await this.databaseService.users.findUnique({
       where: {
@@ -221,14 +220,15 @@ export class AuthService {
     }
 
     if (!data) {
-      await this.redisService
-        .setInCache(attemptKey, totalAttempts, MINUTES_10_MS)
-        .catch((error) => {
-          console.error(
-            `Failed to increment login attempts for ${attemptKey}`,
-            error,
-          );
-        });
+      const storeInCache = await this.redisService.setInCache(
+        attemptKey,
+        totalAttempts,
+        MINUTES_10_MS,
+      );
+
+      if (!storeInCache.status) {
+        console.error(storeInCache.error);
+      }
 
       if (totalAttempts >= 5) {
         console.warn(
@@ -258,9 +258,11 @@ export class AuthService {
       userAgent,
     );
 
-    await this.redisService.deleteFromCache(attemptKey).catch((error) => {
-      console.error(`Failed to delete login attempts for ${attemptKey}`, error);
-    });
+    const deleteFromCache = await this.redisService.deleteFromCache(attemptKey);
+
+    if (!deleteFromCache.status) {
+      console.error(deleteFromCache.error);
+    }
 
     return { message: 'success', tokens };
   }

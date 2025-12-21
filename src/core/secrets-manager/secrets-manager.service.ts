@@ -45,17 +45,15 @@ export class SecretsManagerService
 
   async getSecret<T>(secretId: string): Promise<FnResult<T>> {
     try {
-      const secretExistsInCache = await this.redisService
-        .getFromCache<T>(secretId)
-        .catch((error) => {
-          //FIXME:
-          console.error(`Failed to get ${secretId}:secret from cache`, error);
+      const { status, error, data } =
+        await this.redisService.getFromCache<T>(secretId);
 
-          return undefined;
-        });
+      if (status && data) {
+        return { status: true, error: null, data };
+      }
 
-      if (secretExistsInCache) {
-        return { status: true, error: null, data: secretExistsInCache };
+      if (!status) {
+        console.error(error);
       }
 
       const secret = await this.send(
@@ -72,13 +70,15 @@ export class SecretsManagerService
         JWT_SECRET: string;
       };
 
-      await this.redisService
-        .setInCache(secretId, jwtSecret, MINUTES_10)
-        .catch((error) => {
-          console.error(`Failed to set ${secretId}:secret in cache`, error);
+      const storeInCache = await this.redisService.setInCache(
+        secretId,
+        jwtSecret,
+        MINUTES_10,
+      );
 
-          return undefined;
-        });
+      if (!storeInCache.status) {
+        console.error(storeInCache.error);
+      }
 
       return { status: true, data: jwtSecret as T, error: null };
     } catch (err) {

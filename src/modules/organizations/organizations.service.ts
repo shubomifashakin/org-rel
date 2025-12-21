@@ -116,27 +116,30 @@ export class OrganizationsService {
       },
     });
 
-    await this.redisService
-      .setInCache(this.makeOrganizationCacheKey(org.id), org)
-      .catch((error) => {
-        //FIXME: IMPLEMENT PROPER ERROR LOGGING
-        console.error('Error caching organization in Redis:', error);
-      });
+    const { status, error } = await this.redisService.setInCache(
+      this.makeOrganizationCacheKey(org.id),
+      org,
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'Success' };
   }
 
   async getOneOrganization(id: string) {
-    const cache = await this.redisService
-      .getFromCache<CachedOrg>(this.makeOrganizationCacheKey(id))
-      .catch((error) => {
-        //FIXME
-        console.error(error);
-        return null;
-      });
+    const { status, error, data } =
+      await this.redisService.getFromCache<CachedOrg>(
+        this.makeOrganizationCacheKey(id),
+      );
 
-    if (cache) {
-      return cache;
+    if (!status) {
+      console.error(error);
+    }
+
+    if (status && data) {
+      return data;
     }
 
     const organization = await this.databaseService.organizations.findUnique({
@@ -154,12 +157,14 @@ export class OrganizationsService {
 
     const cachedOrg = organization satisfies CachedOrg;
 
-    await this.redisService
-      .setInCache(this.makeOrganizationCacheKey(id), cachedOrg)
-      .catch((error) => {
-        //FIXME: IMPLEMENT PROPER ERROR LOGGING
-        console.error('Error caching organization in Redis:', error);
-      });
+    const storeInCache = await this.redisService.setInCache(
+      this.makeOrganizationCacheKey(id),
+      cachedOrg,
+    );
+
+    if (!storeInCache.status) {
+      console.error(storeInCache.error);
+    }
 
     return cachedOrg;
   }
@@ -188,13 +193,14 @@ export class OrganizationsService {
       },
     })) satisfies CachedOrg;
 
-    await this.redisService
-      .setInCache(this.makeOrganizationCacheKey(id), org)
-      .catch((error) => {
-        //FIXME
-        console.error('Error updating organization in cache:', error);
-        return null;
-      });
+    const { status, error } = await this.redisService.setInCache(
+      this.makeOrganizationCacheKey(id),
+      org,
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'success' };
   }
@@ -212,13 +218,13 @@ export class OrganizationsService {
       where: { id },
     });
 
-    await this.redisService
-      .deleteFromCache(this.makeOrganizationCacheKey(id))
-      .catch((error) => {
-        //FIXME
-        console.error(error);
-        return null;
-      });
+    const { status, error } = await this.redisService.deleteFromCache(
+      this.makeOrganizationCacheKey(id),
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'success' };
   }
@@ -369,16 +375,17 @@ export class OrganizationsService {
     organizationId: string,
     userId: string,
   ): Promise<CachedUser> {
-    const cache = await this.redisService
-      .getFromCache<CachedUser>(this.makeUserCacheKey(organizationId, userId))
-      .catch((error) => {
-        //FIXME:
-        console.error('Error fetching organization user from cache:', error);
-        return null;
-      });
+    const { status, data, error } =
+      await this.redisService.getFromCache<CachedUser>(
+        this.makeUserCacheKey(organizationId, userId),
+      );
 
-    if (cache) {
-      return cache;
+    if (!status) {
+      console.error(error);
+    }
+
+    if (status && data) {
+      return data;
     }
 
     const user = await this.databaseService.organizationsOnUsers.findUnique({
@@ -414,13 +421,14 @@ export class OrganizationsService {
       role: userRole,
     } satisfies CachedUser;
 
-    await this.redisService
-      .setInCache(this.makeUserCacheKey(organizationId, userId), cachedUser)
-      .catch((error) => {
-        //FIXME:
-        console.error('Error setting organization user in cache:', error);
-        return null;
-      });
+    const storeInCache = await this.redisService.setInCache(
+      this.makeUserCacheKey(organizationId, userId),
+      cachedUser,
+    );
+
+    if (!storeInCache.status) {
+      console.error(storeInCache.error);
+    }
 
     return cachedUser;
   }
@@ -459,13 +467,14 @@ export class OrganizationsService {
       role: user.role,
     } satisfies CachedUser;
 
-    await this.redisService
-      .setInCache(this.makeUserCacheKey(organizationId, userId), updatedUser)
-      .catch((error) => {
-        //FIXME:
-        console.error('Error updating organization user in cache:', error);
-        return null;
-      });
+    const { status, error } = await this.redisService.setInCache(
+      this.makeUserCacheKey(organizationId, userId),
+      updatedUser,
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'Success' };
   }
@@ -494,13 +503,13 @@ export class OrganizationsService {
       },
     });
 
-    await this.redisService
-      .deleteFromCache(this.makeUserCacheKey(organizationId, userId))
-      .catch((error) => {
-        //FIXME:
-        console.error('Error deleting organization user from cache:', error);
-        return null;
-      });
+    const { status, error } = await this.redisService.deleteFromCache(
+      this.makeUserCacheKey(organizationId, userId),
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'Success' };
   }
@@ -560,12 +569,14 @@ export class OrganizationsService {
       },
     })) satisfies CachedProject;
 
-    await this.redisService
-      .setInCache(this.makeProjectCacheKey(organizationId, project.id), project)
-      .catch((error) => {
-        //FIXME: IMPLEMENT PROPER ERROR LOGGING
-        console.error('Error caching project in Redis:', error);
-      });
+    const { status, error } = await this.redisService.setInCache(
+      this.makeProjectCacheKey(organizationId, project.id),
+      project,
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'success' };
   }
@@ -574,17 +585,17 @@ export class OrganizationsService {
     organizationId: string,
     projectId: string,
   ): Promise<CachedProject> {
-    const cachedProject = await this.redisService
-      .getFromCache<CachedProject>(
+    const { status, error, data } =
+      await this.redisService.getFromCache<CachedProject>(
         this.makeProjectCacheKey(organizationId, projectId),
-      )
-      .catch((error) => {
-        console.error('Error fetching project from Redis:', error);
-        return null;
-      });
+      );
 
-    if (cachedProject) {
-      return cachedProject;
+    if (!status) {
+      console.error(error);
+    }
+
+    if (status && data) {
+      return data;
     }
 
     const project = (await this.databaseService.projects.findUnique({
@@ -602,12 +613,14 @@ export class OrganizationsService {
       throw new NotFoundException('Project not found');
     }
 
-    await this.redisService
-      .setInCache(this.makeProjectCacheKey(organizationId, projectId), project)
-      .catch((error) => {
-        //FIXME: IMPLEMENT PROPER ERROR LOGGING
-        console.error('Error caching project in Redis:', error);
-      });
+    const storeInCache = await this.redisService.setInCache(
+      this.makeProjectCacheKey(organizationId, projectId),
+      project,
+    );
+
+    if (!storeInCache.status) {
+      console.error(storeInCache.error);
+    }
 
     return project;
   }
@@ -643,12 +656,14 @@ export class OrganizationsService {
       },
     })) satisfies CachedProject;
 
-    await this.redisService
-      .setInCache(this.makeProjectCacheKey(orgId, projectId), project)
-      .catch((error) => {
-        //FIXME: IMPLEMENT PROPER ERROR LOGGER
-        console.error('Error updating project in Redis:', error);
-      });
+    const { status, error } = await this.redisService.setInCache(
+      this.makeProjectCacheKey(orgId, projectId),
+      project,
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'success' };
   }
@@ -672,13 +687,13 @@ export class OrganizationsService {
       },
     });
 
-    await this.redisService
-      .deleteFromCache(this.makeProjectCacheKey(organizationId, projectId))
-      .catch((error) => {
-        //FIXME:
-        console.error('Error deleting project from cache:', error);
-        return null;
-      });
+    const { status, error } = await this.redisService.deleteFromCache(
+      this.makeProjectCacheKey(organizationId, projectId),
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'success' };
   }

@@ -13,10 +13,11 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js'
 
 type UserInfo = {
   id: string;
-  image: string;
+  image: string | null;
   fullname: string;
   username: string;
-  createdAt: string;
+  createdAt: Date;
+  email: string;
 };
 
 @Injectable()
@@ -27,16 +28,16 @@ export class AccountsService {
     private readonly redisService: RedisService,
   ) {}
 
-  async getMyAccountInfo(userId: string) {
-    const existsInCache = await this.redisService
-      .getFromCache<UserInfo>(`user:${userId}`)
-      .catch((error) => {
-        console.error('Failed to get user info from cache', error);
-        return undefined;
-      });
+  async getMyAccountInfo(userId: string): Promise<UserInfo> {
+    const { status, error, data } =
+      await this.redisService.getFromCache<UserInfo>(`user:${userId}`);
 
-    if (existsInCache) {
-      return existsInCache;
+    if (status && data) {
+      return data;
+    }
+
+    if (!status) {
+      console.error(error);
     }
 
     const userInfo = await this.databaseService.users.findUnique({
@@ -45,6 +46,7 @@ export class AccountsService {
       },
       select: {
         id: true,
+        email: true,
         image: true,
         fullname: true,
         username: true,
@@ -56,11 +58,14 @@ export class AccountsService {
       throw new NotFoundException('User does not exist');
     }
 
-    await this.redisService
-      .setInCache(`user:${userId}`, userInfo)
-      .catch((error) => {
-        console.error('Failed to set user info in cache', error);
-      });
+    const storeInCache = await this.redisService.setInCache(
+      `user:${userId}`,
+      userInfo,
+    );
+
+    if (!storeInCache.status) {
+      console.error(storeInCache.error);
+    }
 
     return userInfo;
   }
@@ -82,9 +87,13 @@ export class AccountsService {
       },
     });
 
-    await this.redisService.deleteFromCache(`user:${userId}`).catch((error) => {
-      console.error('Failed to delete user info from cache', error);
-    });
+    const { status, error } = await this.redisService.deleteFromCache(
+      `user:${userId}`,
+    );
+
+    if (!status) {
+      console.error(error);
+    }
 
     return { message: 'success' };
   }
@@ -124,14 +133,18 @@ export class AccountsService {
           fullname: true,
           username: true,
           createdAt: true,
+          email: true,
         },
       });
 
-      await this.redisService
-        .setInCache(`user:${userId}`, userInfo)
-        .catch((error) => {
-          console.error('Failed to delete user info from cache', error);
-        });
+      const { status, error } = await this.redisService.setInCache(
+        `user:${userId}`,
+        userInfo,
+      );
+
+      if (!status) {
+        console.error(error);
+      }
 
       return { message: 'success' };
     } catch (error) {

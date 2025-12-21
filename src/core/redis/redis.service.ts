@@ -4,6 +4,7 @@ import env from '../serverEnv/index.js';
 import { DAYS_7 } from '../../common/utils/constants.js';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import { ThrottlerStorageRecord } from '@nestjs/throttler/dist/throttler-storage-record.interface.js';
+import { FnResult } from '../../types/fnResult.js';
 
 @Injectable()
 export class RedisService
@@ -63,18 +64,67 @@ export class RedisService
    * @param data data to store
    * @param exp in seconds
    */
-  async setInCache(key: string, data: any, exp?: number) {
-    await this.client.set(key, JSON.stringify(data), {
-      expiration: { type: 'EX', value: exp || DAYS_7 },
-    });
+  async setInCache(
+    key: string,
+    data: any,
+    exp?: number,
+  ): Promise<FnResult<null>> {
+    try {
+      await this.client.set(key, JSON.stringify(data), {
+        expiration: { type: 'EX', value: exp || DAYS_7 },
+      });
+
+      return { status: true, data: null, error: null };
+    } catch (error) {
+      if (error instanceof Error) {
+        return { status: false, data: null, error: error.message };
+      }
+
+      return {
+        status: false,
+        data: null,
+        error: `Failed to set ${key} in cache`,
+      };
+    }
   }
 
-  async getFromCache<T>(key: string): Promise<T | null> {
-    const data = await this.client.get(key);
-    return data ? (JSON.parse(data) as T) : null;
+  async getFromCache<T>(key: string): Promise<FnResult<T | null>> {
+    try {
+      const data = await this.client.get(key);
+
+      return {
+        status: true,
+        data: data ? (JSON.parse(data) as T) : null,
+        error: null,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        return { status: false, data: null, error: error.message };
+      }
+
+      return {
+        status: false,
+        data: null,
+        error: `Failed to set ${key} in cache`,
+      };
+    }
   }
 
-  async deleteFromCache(key: string) {
-    await this.client.del(key);
+  async deleteFromCache(key: string): Promise<FnResult<null>> {
+    try {
+      await this.client.del(key);
+
+      return { status: true, data: null, error: null };
+    } catch (error) {
+      if (error instanceof Error) {
+        return { status: false, data: null, error: error.message };
+      }
+
+      return {
+        status: false,
+        data: null,
+        error: `Failed to delete ${key} from cache cache`,
+      };
+    }
   }
 }
