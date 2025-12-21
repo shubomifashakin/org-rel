@@ -366,7 +366,7 @@ export class OrganizationsService {
     });
 
     if (!inviteExistsForUser) {
-      throw new NotFoundException('Invite Not Found');
+      throw new NotFoundException('Invite does not exist');
     }
 
     if (
