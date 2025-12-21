@@ -33,7 +33,7 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
     );
 
-    if (!requiredRolesForHandler) {
+    if (!requiredRolesForHandler || !requiredRolesForHandler?.length) {
       return true;
     }
 
