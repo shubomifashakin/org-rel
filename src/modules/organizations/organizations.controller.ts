@@ -8,8 +8,6 @@ import {
   Patch,
   Delete,
   UploadedFile,
-  Query,
-  ParseUUIDPipe,
   HttpCode,
   UploadedFiles,
   Req,
@@ -20,6 +18,7 @@ import { OrganizationsService } from './organizations.service.js';
 
 import { NeedsRoles } from './common/decorators/role.decorator.js';
 import { ValidateUUID } from './common/decorators/uuid-validator.decorator.js';
+import { ValidateUUIDQueryParam } from './common/decorators/query-validator.decorator.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
@@ -90,7 +89,7 @@ export class OrganizationsController {
   getOrgUsers(
     @ValidateUUID('organizationId', 'Invalid organization id')
     organizationId: string,
-    @Query('next', ParseUUIDPipe) next?: string,
+    @ValidateUUIDQueryParam('next', null, true) next?: string,
   ): Promise<{
     cursor?: string;
     hasNextPage: boolean;
@@ -124,7 +123,7 @@ export class OrganizationsController {
   @Get(':organizationId/users/invites') //get all invites that have been sent out
   getAllInvites(
     @ValidateUUID('organizationId', 'Invalid organization id') id: string,
-    @Query('next', ParseUUIDPipe) next?: string,
+    @ValidateUUIDQueryParam('next', null, true) next?: string,
   ) {
     return this.organizationsService.getAllInvites(id, next);
   }
@@ -184,7 +183,7 @@ export class OrganizationsController {
   getOrgProjects(
     @ValidateUUID('organizationId', 'Invalid organization id')
     organizationId: string,
-    @Query('next', ParseUUIDPipe) next?: string,
+    @ValidateUUIDQueryParam('next', null, true) next?: string,
   ): Promise<{
     projects: Pick<
       Projects,
