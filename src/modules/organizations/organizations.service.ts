@@ -10,6 +10,7 @@ import { v4 as uuid } from 'uuid';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
+import { MINUTES_10 } from '../../common/utils/constants.js';
 import env from '../../core/serverEnv/index.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
@@ -421,6 +422,7 @@ export class OrganizationsService {
     const storeInCache = await this.redisService.setInCache(
       this.makeUserCacheKey(organizationId, userId),
       cachedUser,
+      MINUTES_10,
     );
 
     if (!storeInCache.status) {
@@ -467,6 +469,7 @@ export class OrganizationsService {
     const { status, error } = await this.redisService.setInCache(
       this.makeUserCacheKey(organizationId, userId),
       updatedUser,
+      MINUTES_10,
     );
 
     if (!status) {

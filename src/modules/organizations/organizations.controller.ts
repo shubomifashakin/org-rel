@@ -32,9 +32,10 @@ import { Projects } from '../../../generated/prisma/client.js';
 import { GetImage } from '../../common/decorators/get-image.decorator.js';
 import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
 import { RolesGuard } from './common/guards/role.guard.js';
+import { IsMemberGuard } from './common/guards/is-member.guard.js';
 
 @Controller('organizations')
-@UseGuards(UserAuthGuard, RolesGuard)
+@UseGuards(UserAuthGuard, IsMemberGuard, RolesGuard)
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 

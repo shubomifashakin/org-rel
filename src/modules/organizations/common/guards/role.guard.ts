@@ -10,6 +10,7 @@ import {
 
 import { DatabaseService } from '../../../../core/database/database.service.js';
 import { RedisService } from '../../../../core/redis/redis.service.js';
+import { MINUTES_10 } from '../../../../common/utils/constants.js';
 
 import { ROLES_KEY } from '../decorators/role.decorator.js';
 import { cacheKeys } from '../../utils.js';
@@ -107,6 +108,7 @@ export class RolesGuard implements CanActivate {
     const { status, error } = await this.redisService.setInCache(
       cacheIdentifier,
       cachedUser,
+      MINUTES_10,
     );
 
     if (!status) {
