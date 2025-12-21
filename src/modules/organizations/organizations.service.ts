@@ -6,14 +6,17 @@ import {
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuid } from 'uuid';
 
-import { CreateOrganizationDto } from './dto/create-organization.dto.js';
-import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
+import { RedisService } from '../../core/redis/redis.service.js';
+import env from '../../core/serverEnv/index.js';
+
+import { CreateOrganizationDto } from './dto/create-organization.dto.js';
+import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
-import { RedisService } from '../../core/redis/redis.service.js';
+
 import { cacheKeys } from './utils.js';
 import {
   Organizations,
@@ -52,7 +55,7 @@ export class OrganizationsService {
   ): Promise<string | undefined> {
     try {
       const imageKey = uuid();
-      const bucket = process.env.BUCKET_NAME!;
+      const bucket = env.S3_BUCKET_NAME;
 
       await this.s3Service.send(
         new PutObjectCommand({
