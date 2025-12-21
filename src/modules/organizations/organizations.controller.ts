@@ -35,7 +35,7 @@ import { RolesGuard } from './common/guards/role.guard.js';
 import { IsMemberGuard } from './common/guards/is-member.guard.js';
 
 @Controller('organizations')
-@UseGuards(UserAuthGuard, IsMemberGuard, RolesGuard)
+@UseGuards(UserAuthGuard)
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
@@ -55,6 +55,7 @@ export class OrganizationsController {
   }
 
   @Get(':organizationId') //get a particular org
+  @UseGuards(IsMemberGuard)
   getOneOrganization(
     @ValidateUUID('organizationId', 'Invalid organization id') id: string,
   ): Promise<Pick<Organizations, 'id' | 'name' | 'image'>> {
@@ -62,6 +63,7 @@ export class OrganizationsController {
   }
 
   @Patch(':organizationId') //update an org
+  @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
   @GetImage()
   updateOneOrganization(
@@ -77,6 +79,7 @@ export class OrganizationsController {
   }
 
   @Delete(':organizationId') //delete an org
+  @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
   deleteOneOrganization(
     @ValidateUUID('organizationId', 'Invalid organization id') id: string,
@@ -86,6 +89,7 @@ export class OrganizationsController {
 
   //USERS
   @Get(':organizationId/users') //get all the users in an org
+  @UseGuards(IsMemberGuard)
   getOrgUsers(
     @ValidateUUID('organizationId', 'Invalid organization id')
     organizationId: string,
@@ -107,6 +111,7 @@ export class OrganizationsController {
 
   //USERS / INVITES
   @Post(':organizationId/users/invites') //send an invite to a user
+  @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
   inviteOneUser(
     @Req() req: Request,
@@ -121,6 +126,7 @@ export class OrganizationsController {
   }
 
   @Get(':organizationId/users/invites') //get all invites that have been sent out
+  @UseGuards(IsMemberGuard)
   getAllInvites(
     @ValidateUUID('organizationId', 'Invalid organization id') id: string,
     @ValidateUUIDQueryParam('next', null, true) next?: string,
@@ -129,6 +135,7 @@ export class OrganizationsController {
   }
 
   @Post(':organizationId/users/invites/:inviteId')
+  @UseGuards(IsMemberGuard)
   updateInvite(
     @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
     @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
@@ -144,6 +151,7 @@ export class OrganizationsController {
   //USERS / USERID
 
   @Get(':organizationId/users/:userId') //get a user in an org
+  @UseGuards(IsMemberGuard)
   getOneOrgUser(
     @ValidateUUID('organizationId', 'Invalid organization id')
     organizationId: string,
@@ -153,6 +161,7 @@ export class OrganizationsController {
   }
 
   @Patch(':organizationId/users/:userId') //update a user in an org
+  @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
   updateOneOrgUser(
     @ValidateUUID('organizationId', 'Invalid organization id')
@@ -169,6 +178,7 @@ export class OrganizationsController {
 
   @Throttle({ default: { limit: 5, ttl: 30 } })
   @Delete(':organizationId/users/:userId') //delete a user in an org
+  @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
   deleteOneOrgUser(
     @ValidateUUID('organizationId', 'Invalid organization id')
@@ -180,6 +190,7 @@ export class OrganizationsController {
 
   //PROJECTS
   @Get(':organizationId/projects') //get the projects in an org
+  @UseGuards(IsMemberGuard)
   getOrgProjects(
     @ValidateUUID('organizationId', 'Invalid organization id')
     organizationId: string,
@@ -197,6 +208,7 @@ export class OrganizationsController {
 
   @Throttle({ default: { limit: 5, ttl: 10 } })
   @Post(':organizationId/projects') //create a project in an org
+  @UseGuards(IsMemberGuard)
   @GetImage()
   createOrgProject(
     @ValidateUUID('organizationId', 'Invalid organization id')
@@ -212,6 +224,7 @@ export class OrganizationsController {
   }
 
   @Get(':organizationId/projects/:projectId') //get a project in an org
+  @UseGuards(IsMemberGuard)
   getOneOrgProject(
     @ValidateUUID('organizationId', 'Invalid organization id')
     organizationId: string,
@@ -224,6 +237,7 @@ export class OrganizationsController {
   }
 
   @Patch(':organizationId/projects/:projectId') //update a project in an org
+  @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
   @GetImage()
   updateOneOrgProject(
@@ -242,6 +256,7 @@ export class OrganizationsController {
   }
 
   @Delete(':organizationId/projects/:projectId') //delete a project in an org
+  @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
   deleteOneOrgProject(
     @ValidateUUID('organizationId', 'Invalid organization id')
