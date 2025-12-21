@@ -1,5 +1,5 @@
 import { type Request } from 'express';
-import { seconds, Throttle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import {
   Controller,
   Get,
@@ -166,7 +166,7 @@ export class OrganizationsController {
     );
   }
 
-  @Throttle({ default: { limit: 5, ttl: seconds(30) } })
+  @Throttle({ default: { limit: 5, ttl: 30 } })
   @Delete(':organizationId/users/:userId') //delete a user in an org
   @NeedsRoles('ADMIN')
   deleteOneOrgUser(
@@ -194,7 +194,7 @@ export class OrganizationsController {
     return this.organizationsService.getAllOrgProjects(organizationId, next);
   }
 
-  @Throttle({ default: { limit: 5, ttl: seconds(10) } })
+  @Throttle({ default: { limit: 5, ttl: 10 } })
   @Post(':organizationId/projects') //create a project in an org
   @GetImage()
   createOrgProject(
@@ -202,7 +202,7 @@ export class OrganizationsController {
     organizationId: string,
     @Body() createProjectDto: CreateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
-  ): Promise<{ message: string }> {
+  ): Promise<{ id: string }> {
     return this.organizationsService.createOrgProject(
       organizationId,
       createProjectDto,

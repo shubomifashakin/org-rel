@@ -525,7 +525,6 @@ export class OrganizationsService {
       take: limit + 1,
       ...(next && { cursor: { id: next } }),
       orderBy: {
-        id: 'desc',
         createdAt: 'desc',
       },
     });
@@ -582,7 +581,7 @@ export class OrganizationsService {
       console.error(error);
     }
 
-    return { message: 'success' };
+    return { id: project.id };
   }
 
   async getOneOrgProject(
