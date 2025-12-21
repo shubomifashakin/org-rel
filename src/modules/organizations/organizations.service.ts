@@ -113,7 +113,7 @@ export class OrganizationsService {
       console.error(error);
     }
 
-    return { message: 'Success' };
+    return { id: org.id };
   }
 
   async getOneOrganization(id: string) {
