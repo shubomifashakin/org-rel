@@ -400,7 +400,7 @@ export class OrganizationsService {
 
     const hasNextPage = invites.length > limit;
     const items = invites.slice(0, limit);
-    const cursor = invites[invites.length - 1]?.id;
+    const cursor = hasNextPage ? invites[invites.length - 1]?.id : undefined;
 
     return {
       invites: items,
