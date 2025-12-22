@@ -524,7 +524,11 @@ export class OrganizationsService {
           },
         });
 
-      if (userIsAdmin?.role === 'ADMIN' && updateOrgUserDto.role !== 'ADMIN') {
+      if (!userIsAdmin) {
+        throw new NotFoundException('User does not exist');
+      }
+
+      if (userIsAdmin.role === 'ADMIN' && updateOrgUserDto.role !== 'ADMIN') {
         const usersThatAreAdmins =
           await this.databaseService.organizationsOnUsers.findFirst({
             where: {
