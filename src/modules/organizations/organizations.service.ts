@@ -370,6 +370,8 @@ export class OrganizationsService {
     //FIXME: SEND A MAIL TO THE INVITED USER
     //send a mail to the user stating the role they are being invited for and the person inviting them
     console.log(invitedUsersEmail, invitedUsersRole);
+
+    return { message: 'success' };
   }
 
   async getAllInvites(organizationId: string, next?: string) {
