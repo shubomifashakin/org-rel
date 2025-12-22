@@ -25,7 +25,6 @@ import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
-import { UpdateInviteDto } from './dto/update-invite.dto.js';
 
 import { Organizations } from '../../../generated/prisma/client.js';
 import { Projects } from '../../../generated/prisma/client.js';
@@ -137,24 +136,6 @@ export class OrganizationsController {
     @ValidateUUIDQueryParam('next', null, true) next?: string,
   ) {
     return this.organizationsService.getAllInvites(id, next);
-  }
-
-  //FIXME: REMOVE FROM HERE, SHOULD BE IN accounts CONTROLLER
-  @Patch(':organizationId/users/invites/:inviteId')
-  updateInviteStatus(
-    @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
-    @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
-    @Body() updateInviteDto: UpdateInviteDto,
-    @Req() req: Request,
-  ) {
-    const email = req.user.email;
-    return this.organizationsService.updateInviteStatus(
-      orgId,
-      inviteId,
-      updateInviteDto,
-      email,
-      req.user.id,
-    );
   }
 
   @Delete(':organizationId/users/invites/:inviteId') //delete an invite

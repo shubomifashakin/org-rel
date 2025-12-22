@@ -27,7 +27,6 @@ import {
 } from './common/utils.js';
 import { Organizations, Projects } from '../../../generated/prisma/client.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
-import { UpdateInviteDto } from './dto/update-invite.dto.js';
 import { CachedUser } from './types/index.js';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
 
@@ -406,66 +405,6 @@ export class OrganizationsService {
       hasNextPage,
       ...(cursor && { cursor }),
     };
-  }
-
-  //FIXME: SHOULD BE IN ACCOUNTS CONTROLLER
-  async updateInviteStatus(
-    organizationId: string,
-    inviteId: string,
-    updateInvite: UpdateInviteDto,
-    email: string,
-    userId: string,
-  ) {
-    const inviteExistsForUser = await this.databaseService.invites.findFirst({
-      where: {
-        id: inviteId,
-        email,
-        organizationId,
-      },
-    });
-
-    if (!inviteExistsForUser) {
-      throw new NotFoundException('Invite does not exist');
-    }
-
-    if (new Date() > inviteExistsForUser.expiresAt) {
-      throw new BadRequestException('Invite has expired');
-    }
-
-    if (inviteExistsForUser.status !== 'PENDING') {
-      throw new BadRequestException(
-        `Invite already ${inviteExistsForUser.status.toLocaleLowerCase()}`,
-      );
-    }
-
-    await this.databaseService.$transaction(async (tx) => {
-      const status = await tx.invites.update({
-        where: {
-          id: inviteId,
-          organizationId,
-          email,
-        },
-        data: {
-          status: updateInvite.status,
-        },
-        select: {
-          role: true,
-          status: true,
-        },
-      });
-
-      if (status.status === 'ACCEPTED') {
-        await tx.organizationsOnUsers.create({
-          data: {
-            organizationId,
-            userId,
-            role: status.role,
-          },
-        });
-      }
-    });
-
-    return { message: 'success' };
   }
 
   async deleteInvite(organizationId: string, inviteId: string) {
