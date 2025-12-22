@@ -34,6 +34,8 @@ import { RolesGuard } from './common/guards/role.guard.js';
 import { IsMemberGuard } from './common/guards/is-member.guard.js';
 import { CachedUser } from './types/index.js';
 
+//FIXME: SPLIT INTO MULTIPLE SERVICES
+
 @Controller('organizations')
 @UseGuards(UserAuthGuard)
 export class OrganizationsController {
