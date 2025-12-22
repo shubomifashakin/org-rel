@@ -18,6 +18,8 @@ import { UpdateAccountDto } from './dtos/update-account.dto.js';
 import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
 import { GetImage } from '../../common/decorators/get-image.decorator.js';
 import { TOKEN } from '../../common/utils/constants.js';
+import { ValidateUUID } from '../organizations/common/decorators/uuid-validator.decorator.js';
+import { UpdateInviteDto } from './dtos/update-invite.dto.js';
 
 @Controller('accounts')
 @UseGuards(UserAuthGuard)
@@ -52,6 +54,21 @@ export class AccountsController {
       req.user.id,
       updateAccountDto,
       file,
+    );
+  }
+
+  @Patch('me/invites/:inviteId')
+  updateInviteStatus(
+    @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
+    @Body() updateInviteDto: UpdateInviteDto,
+    @Req() req: Request,
+  ) {
+    const email = req.user.email;
+    return this.accountsService.updateInviteStatus(
+      inviteId,
+      updateInviteDto,
+      email,
+      req.user.id,
     );
   }
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -12,6 +13,7 @@ import { S3Service } from '../../core/s3/s3.service.js';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { UpdateAccountDto } from './dtos/update-account.dto.js';
 import { RedisService } from '../../core/redis/redis.service.js';
+import { UpdateInviteDto } from './dtos/update-invite.dto.js';
 
 type UserInfo = {
   id: string;
@@ -173,5 +175,62 @@ export class AccountsService {
 
       throw error;
     }
+  }
+
+  async updateInviteStatus(
+    inviteId: string,
+    updateInvite: UpdateInviteDto,
+    email: string,
+    userId: string,
+  ) {
+    const inviteExistsForUser = await this.databaseService.invites.findFirst({
+      where: {
+        id: inviteId,
+        email,
+      },
+    });
+
+    if (!inviteExistsForUser) {
+      throw new NotFoundException('Invite does not exist');
+    }
+
+    if (new Date() > inviteExistsForUser.expiresAt) {
+      throw new BadRequestException('Invite has expired');
+    }
+
+    if (inviteExistsForUser.status !== 'PENDING') {
+      throw new BadRequestException(
+        `Invite already ${inviteExistsForUser.status.toLocaleLowerCase()}`,
+      );
+    }
+
+    await this.databaseService.$transaction(async (tx) => {
+      const status = await tx.invites.update({
+        where: {
+          email,
+          id: inviteId,
+        },
+        data: {
+          status: updateInvite.status,
+        },
+        select: {
+          role: true,
+          status: true,
+          organizationId: true,
+        },
+      });
+
+      if (status.status === 'ACCEPTED') {
+        await tx.organizationsOnUsers.create({
+          data: {
+            userId,
+            role: status.role,
+            organizationId: status.organizationId,
+          },
+        });
+      }
+    });
+
+    return { message: 'success' };
   }
 }
