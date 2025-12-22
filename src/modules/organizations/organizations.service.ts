@@ -489,12 +489,47 @@ export class OrganizationsService {
     return cachedUser;
   }
 
-  async updateOneOrgUser(
+  async updateOneOrgUsersRole(
     organizationId: string,
     userId: string,
     updateOrgUserDto: UpdateOrgUserDto,
   ) {
     try {
+      const userIsAdmin =
+        await this.databaseService.organizationsOnUsers.findUnique({
+          where: {
+            organizationId_userId: {
+              organizationId,
+              userId,
+            },
+          },
+          select: {
+            role: true,
+          },
+        });
+
+      //if we are changing an admin user, to a non admin user, we need to check if there are other admins in the org
+      if (userIsAdmin?.role === 'ADMIN' && updateOrgUserDto.role !== 'ADMIN') {
+        const usersThatAreAdmins =
+          await this.databaseService.organizationsOnUsers.findFirst({
+            where: {
+              organizationId,
+              role: 'ADMIN',
+              AND: {
+                NOT: {
+                  userId,
+                },
+              },
+            },
+          });
+
+        if (!usersThatAreAdmins) {
+          throw new BadRequestException(
+            'An organization must have at least 1 admin!',
+          );
+        }
+      }
+
       const user = await this.databaseService.organizationsOnUsers.update({
         where: {
           organizationId_userId: {

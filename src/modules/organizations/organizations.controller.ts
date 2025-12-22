@@ -159,16 +159,16 @@ export class OrganizationsController {
     return this.organizationsService.getOneOrgUser(organizationId, userId);
   }
 
-  @Patch(':organizationId/users/:userId') //update a user in an org
+  @Patch(':organizationId/users/:userId') //update a users role in an org
   @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
-  updateOneOrgUser(
+  updateOneOrgUsersRole(
     @ValidateUUID('organizationId', 'Invalid organization id')
     organizationId: string,
     @ValidateUUID('userId', 'Invalid user id') userId: string,
     @Body() updateOrgUserDto: UpdateOrgUserDto,
   ): Promise<{ message: string }> {
-    return this.organizationsService.updateOneOrgUser(
+    return this.organizationsService.updateOneOrgUsersRole(
       organizationId,
       userId,
       updateOrgUserDto,
