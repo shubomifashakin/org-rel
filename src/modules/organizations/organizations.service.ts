@@ -431,7 +431,7 @@ export class OrganizationsService {
     });
 
     if (!inviteExists) {
-      throw new NotFoundException('Invite does not exist');
+      return { message: 'success' };
     }
 
     await this.databaseService.invites.delete({
