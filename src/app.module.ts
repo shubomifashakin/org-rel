@@ -20,12 +20,14 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { SecretsManagerModule } from './core/secrets-manager/secrets-manager.module.js';
 import { AccountsModule } from './modules/accounts/accounts.module.js';
 import { MailerModule } from './core/mailer/mailer.module.js';
+import { LoggerModule } from './core/logger/logger.module.js';
 
 @Module({
   imports: [
     OrganizationsModule,
     DatabaseModule,
     RedisModule,
+    LoggerModule,
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [RedisService],
