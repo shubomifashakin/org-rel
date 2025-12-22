@@ -13,33 +13,41 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+import { CachedUser } from './types/index.js';
+
 import { OrganizationsService } from './organizations.service.js';
+import { OrganizationsInviteService } from './services/organizations-invite.service.js';
+import { OrganizationsUserService } from './services/organizations-user.service.js';
+import { OrganizationsProjectsService } from './services/organizations-projects.service.js';
 
 import { NeedsRoles } from './common/decorators/role.decorator.js';
 import { ValidateUUID } from './common/decorators/uuid-validator.decorator.js';
 import { ValidateUUIDQueryParam } from './common/decorators/query-validator.decorator.js';
 
-import { CreateOrganizationDto } from './dto/create-organization.dto.js';
-import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
-import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
+import { InviteUserDto } from './dto/invite-user.dto.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
-import { InviteUserDto } from './dto/invite-user.dto.js';
+import { UpdateOrgUserDto } from './dto/update-org-user.dto.js';
+import { CreateOrganizationDto } from './dto/create-organization.dto.js';
+import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 
-import { Organizations } from '../../../generated/prisma/client.js';
-import { Projects } from '../../../generated/prisma/client.js';
-import { GetImage } from '../../common/decorators/get-image.decorator.js';
-import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
+import { Projects, Organizations } from '../../../generated/prisma/client.js';
+
 import { RolesGuard } from './common/guards/role.guard.js';
 import { IsMemberGuard } from './common/guards/is-member.guard.js';
-import { CachedUser } from './types/index.js';
+import { UserAuthGuard } from '../../common/guards/user-auth.guard.js';
 
-//FIXME: SPLIT INTO MULTIPLE SERVICES
+import { GetImage } from '../../common/decorators/get-image.decorator.js';
 
 @Controller('organizations')
 @UseGuards(UserAuthGuard)
 export class OrganizationsController {
-  constructor(private readonly organizationsService: OrganizationsService) {}
+  constructor(
+    private readonly organizationsService: OrganizationsService,
+    private readonly organizationsInviteService: OrganizationsInviteService,
+    private readonly organizationsUserService: OrganizationsUserService,
+    private readonly organizationsProjectsService: OrganizationsProjectsService,
+  ) {}
 
   @Post() //create an organization
   @HttpCode(200)
@@ -112,42 +120,7 @@ export class OrganizationsController {
     hasNextPage: boolean;
     users: Array<CachedUser>;
   }> {
-    return this.organizationsService.getOrgUsers(organizationId, next);
-  }
-
-  //USERS / INVITES
-  @Post(':organizationId/users/invites') //send an invite to a user
-  @UseGuards(IsMemberGuard, RolesGuard)
-  @NeedsRoles('ADMIN')
-  inviteOneUser(
-    @Req() req: Request,
-    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
-    @Body() inviteUserDto: InviteUserDto,
-  ) {
-    return this.organizationsService.inviteOneUser(
-      req.user.id,
-      id,
-      inviteUserDto,
-    );
-  }
-
-  @Get(':organizationId/users/invites') //get all invites that have been sent out
-  @UseGuards(IsMemberGuard)
-  getAllInvites(
-    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
-    @ValidateUUIDQueryParam('next', null, true) next?: string,
-  ) {
-    return this.organizationsService.getAllInvites(id, next);
-  }
-
-  @Delete(':organizationId/users/invites/:inviteId') //delete an invite
-  @UseGuards(IsMemberGuard, RolesGuard)
-  @NeedsRoles('ADMIN')
-  deleteInvite(
-    @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
-    @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
-  ) {
-    return this.organizationsService.deleteInvite(orgId, inviteId);
+    return this.organizationsUserService.getOrgUsers(organizationId, next);
   }
 
   //USERS / USERID
@@ -158,7 +131,7 @@ export class OrganizationsController {
     organizationId: string,
     @ValidateUUID('userId', 'Invalid user id') userId: string,
   ) {
-    return this.organizationsService.getOneOrgUser(organizationId, userId);
+    return this.organizationsUserService.getOneOrgUser(organizationId, userId);
   }
 
   @Patch(':organizationId/users/:userId') //update a users role in an org
@@ -170,7 +143,7 @@ export class OrganizationsController {
     @ValidateUUID('userId', 'Invalid user id') userId: string,
     @Body() updateOrgUserDto: UpdateOrgUserDto,
   ): Promise<{ message: string }> {
-    return this.organizationsService.updateOneOrgUsersRole(
+    return this.organizationsUserService.updateOneOrgUsersRole(
       organizationId,
       userId,
       updateOrgUserDto,
@@ -186,7 +159,45 @@ export class OrganizationsController {
     organizationId: string,
     @ValidateUUID('userId', 'Invalid user id') userId: string,
   ): Promise<{ message: string }> {
-    return this.organizationsService.deleteOneOrgUser(organizationId, userId);
+    return this.organizationsUserService.deleteOneOrgUser(
+      organizationId,
+      userId,
+    );
+  }
+
+  // INVITES
+  @Post(':organizationId/invites') //send an invite to a user
+  @UseGuards(IsMemberGuard, RolesGuard)
+  @NeedsRoles('ADMIN')
+  inviteOneUser(
+    @Req() req: Request,
+    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
+    @Body() inviteUserDto: InviteUserDto,
+  ) {
+    return this.organizationsInviteService.inviteOneUser(
+      req.user.id,
+      id,
+      inviteUserDto,
+    );
+  }
+
+  @Get(':organizationId/invites') //get all invites that have been sent out
+  @UseGuards(IsMemberGuard)
+  getAllInvites(
+    @ValidateUUID('organizationId', 'Invalid organization id') id: string,
+    @ValidateUUIDQueryParam('next', null, true) next?: string,
+  ) {
+    return this.organizationsInviteService.getAllInvites(id, next);
+  }
+
+  @Delete(':organizationId/invites/:inviteId') //delete an invite
+  @UseGuards(IsMemberGuard, RolesGuard)
+  @NeedsRoles('ADMIN')
+  deleteInvite(
+    @ValidateUUID('organizationId', 'Invalid organization id') orgId: string,
+    @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,
+  ) {
+    return this.organizationsInviteService.deleteInvite(orgId, inviteId);
   }
 
   //PROJECTS
@@ -204,7 +215,10 @@ export class OrganizationsController {
     hasNextPage: boolean;
     cursor?: string;
   }> {
-    return this.organizationsService.getAllOrgProjects(organizationId, next);
+    return this.organizationsProjectsService.getAllOrgProjects(
+      organizationId,
+      next,
+    );
   }
 
   @Throttle({ default: { limit: 5, ttl: 10 } })
@@ -218,7 +232,7 @@ export class OrganizationsController {
     @Body() createProjectDto: CreateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ id: string }> {
-    return this.organizationsService.createOrgProject(
+    return this.organizationsProjectsService.createOrgProject(
       organizationId,
       createProjectDto,
       image,
@@ -232,7 +246,7 @@ export class OrganizationsController {
     organizationId: string,
     @ValidateUUID('projectId', 'Invalid project id') projectId: string,
   ) {
-    return this.organizationsService.getOneOrgProject(
+    return this.organizationsProjectsService.getOneOrgProject(
       organizationId,
       projectId,
     );
@@ -249,7 +263,7 @@ export class OrganizationsController {
     @Body() updateProjectDto: UpdateProjectDto,
     @UploadedFile() image?: Express.Multer.File,
   ): Promise<{ message: string }> {
-    return this.organizationsService.updateOneOrgProject(
+    return this.organizationsProjectsService.updateOneOrgProject(
       organizationId,
       projectId,
       updateProjectDto,
@@ -265,7 +279,7 @@ export class OrganizationsController {
     organizationId: string,
     @ValidateUUID('projectId', 'Invalid project id') projectId: string,
   ) {
-    return this.organizationsService.deleteOneOrgProject(
+    return this.organizationsProjectsService.deleteOneOrgProject(
       organizationId,
       projectId,
     );
