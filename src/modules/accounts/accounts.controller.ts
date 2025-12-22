@@ -57,6 +57,12 @@ export class AccountsController {
     );
   }
 
+  @Get('me/invites')
+  getAllInvites(@Req() req: Request) {
+    const email = req.user.email;
+    return this.accountsService.getAllInvites(email);
+  }
+
   @Patch('me/invites/:inviteId')
   updateInviteStatus(
     @ValidateUUID('inviteId', 'Invalid invite id') inviteId: string,

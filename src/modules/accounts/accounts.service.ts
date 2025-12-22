@@ -177,6 +177,45 @@ export class AccountsService {
     }
   }
 
+  async getAllInvites(email: string) {
+    const invitesReceived = await this.databaseService.invites.findMany({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        expiresAt: true,
+        role: true,
+        status: true,
+        organization: {
+          select: {
+            name: true,
+          },
+        },
+        inviter: {
+          select: {
+            fullname: true,
+          },
+        },
+      },
+    });
+
+    const transformed = invitesReceived.map((invite) => {
+      return {
+        id: invite.id,
+        role: invite.role,
+        status: invite.status,
+        expiresAt: invite.expiresAt,
+        createdAt: invite.createdAt,
+        inviter: invite.inviter?.fullname,
+        organization: invite.organization.name,
+      };
+    });
+
+    return { invites: transformed };
+  }
+
   async updateInviteStatus(
     inviteId: string,
     updateInvite: UpdateInviteDto,
