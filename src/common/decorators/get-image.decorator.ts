@@ -1,7 +1,7 @@
 import { BadRequestException, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-export const GetImage = (fieldname = 'file') => {
+export const GetImage = (fieldname = 'file', limit = 5 * 1024 * 1024) => {
   return UseInterceptors(
     FileInterceptor(fieldname, {
       fileFilter: (_, file, cb) => {
@@ -12,6 +12,9 @@ export const GetImage = (fieldname = 'file') => {
           );
         }
         cb(null, true);
+      },
+      limits: {
+        fileSize: limit || undefined,
       },
     }),
   );
