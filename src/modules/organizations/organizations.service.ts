@@ -354,7 +354,7 @@ export class OrganizationsService {
       throw new BadRequestException('You cannot invite yourself');
     }
 
-    const organizationName =
+    const organizationInfo =
       await this.databaseService.organizations.findUnique({
         where: {
           id: organizationId,
@@ -364,14 +364,14 @@ export class OrganizationsService {
         },
       });
 
-    if (!organizationName) {
+    if (!organizationInfo) {
       throw new NotFoundException('Organization does not exist');
     }
 
     const invitedUsersEmail = inviteUserDto.email;
     const invitedUsersRole = inviteUserDto.role;
 
-    const inviteId = await this.databaseService.invites.create({
+    const inviteInfo = await this.databaseService.invites.create({
       data: {
         organizationId,
         email: invitedUsersEmail,
@@ -389,13 +389,13 @@ export class OrganizationsService {
     const { error } = await this.mailerService.emails.send({
       from: env.MAILER_FROM,
       to: invitedUsersEmail,
-      subject: `Invitation to join ${organizationName.name}`,
+      subject: `Invitation to join ${organizationInfo.name}`,
       html: generateInviteMail({
-        role: inviteId.role,
-        inviteId: inviteId.id,
-        expiresAt: inviteId.expiresAt,
+        role: inviteInfo.role,
+        inviteId: inviteInfo.id,
+        expiresAt: inviteInfo.expiresAt,
         invitersName: invitersInfo.fullname,
-        organizationsName: organizationName.name,
+        organizationsName: organizationInfo.name,
       }),
     });
 
