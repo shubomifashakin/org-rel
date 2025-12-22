@@ -72,6 +72,7 @@ export class OrganizationsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
+        //FIXME: USE LOGGER IMPLEMENTATION
         console.error(error);
       }
 
