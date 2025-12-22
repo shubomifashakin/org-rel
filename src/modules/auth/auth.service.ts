@@ -208,7 +208,7 @@ export class AuthService {
       console.error(attempts.error);
     }
 
-    const currentAttempts = attempts.data || 1;
+    const currentAttempts = attempts?.data || 1;
 
     if (currentAttempts >= 5) {
       throw new ThrottlerException('Too many login attempts');
