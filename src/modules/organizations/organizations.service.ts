@@ -401,6 +401,7 @@ export class OrganizationsService {
         updatedAt: true,
         inviterId: true,
         role: true,
+        status: true,
       },
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
