@@ -9,7 +9,7 @@ import { Users } from '../../../../../generated/prisma/client.js';
 
 export class SignUpDto implements Pick<
   Users,
-  'fullname' | 'email' | 'username'
+  'fullname' | 'email' | 'username' | 'password'
 > {
   @IsNotEmpty({ message: 'Fullname is required' })
   @IsString({ message: 'Invalid fullname' })
