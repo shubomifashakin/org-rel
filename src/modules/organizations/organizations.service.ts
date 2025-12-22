@@ -508,7 +508,6 @@ export class OrganizationsService {
           },
         });
 
-      //if we are changing an admin user, to a non admin user, we need to check if there are other admins in the org
       if (userIsAdmin?.role === 'ADMIN' && updateOrgUserDto.role !== 'ADMIN') {
         const usersThatAreAdmins =
           await this.databaseService.organizationsOnUsers.findFirst({
@@ -590,10 +589,35 @@ export class OrganizationsService {
             organizationId,
           },
         },
+        select: {
+          role: true,
+        },
       });
 
     if (!userExist) {
       return { message: 'Success' };
+    }
+
+    //prevent deleting all admin users
+    if (userExist.role === 'ADMIN') {
+      const usersThatAreAdmins =
+        await this.databaseService.organizationsOnUsers.findFirst({
+          where: {
+            organizationId,
+            role: 'ADMIN',
+            AND: {
+              NOT: {
+                userId,
+              },
+            },
+          },
+        });
+
+      if (!usersThatAreAdmins) {
+        throw new BadRequestException(
+          'An organization must have at least 1 admin!',
+        );
+      }
     }
 
     await this.databaseService.organizationsOnUsers.delete({
