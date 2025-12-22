@@ -529,7 +529,7 @@ export class OrganizationsService {
       }
 
       if (userIsAdmin.role === 'ADMIN' && updateOrgUserDto.role !== 'ADMIN') {
-        const usersThatAreAdmins =
+        const otherAdminsExist =
           await this.databaseService.organizationsOnUsers.findFirst({
             where: {
               organizationId,
@@ -542,7 +542,7 @@ export class OrganizationsService {
             },
           });
 
-        if (!usersThatAreAdmins) {
+        if (!otherAdminsExist) {
           throw new BadRequestException(
             'An organization must have at least 1 admin!',
           );
@@ -620,7 +620,7 @@ export class OrganizationsService {
 
     //prevent deleting all admin users
     if (userExist.role === 'ADMIN') {
-      const usersThatAreAdmins =
+      const otherAdminsExist =
         await this.databaseService.organizationsOnUsers.findFirst({
           where: {
             organizationId,
@@ -633,7 +633,7 @@ export class OrganizationsService {
           },
         });
 
-      if (!usersThatAreAdmins) {
+      if (!otherAdminsExist) {
         throw new BadRequestException(
           'An organization must have at least 1 admin!',
         );
