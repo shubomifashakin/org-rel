@@ -214,6 +214,7 @@ export class OrganizationsService {
 
     if (image) {
       const { status, error, data } = await this.uploadToS3(image);
+
       if (!status) {
         console.error(error);
         throw new InternalServerErrorException('Internal Server Error');
@@ -360,7 +361,7 @@ export class OrganizationsService {
       });
 
     if (!organizationName) {
-      throw new NotFoundException('Organization Not Found');
+      throw new NotFoundException('Organization does not exist');
     }
 
     const invitedUsersEmail = inviteUserDto.email;
