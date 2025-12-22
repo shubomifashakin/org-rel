@@ -1,9 +1,10 @@
+import { ThrottlerStorage } from '@nestjs/throttler';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ThrottlerStorageRecord } from '@nestjs/throttler/dist/throttler-storage-record.interface.js';
 import { createClient, RedisClientType } from 'redis';
+
 import env from '../serverEnv/index.js';
 import { DAYS_7 } from '../../common/utils/constants.js';
-import { ThrottlerStorage } from '@nestjs/throttler';
-import { ThrottlerStorageRecord } from '@nestjs/throttler/dist/throttler-storage-record.interface.js';
 import { FnResult } from '../../types/fnResult.js';
 
 @Injectable()
@@ -67,11 +68,11 @@ export class RedisService
   async setInCache(
     key: string,
     data: any,
-    exp?: number,
+    exp: number = DAYS_7,
   ): Promise<FnResult<null>> {
     try {
       await this.client.set(key, JSON.stringify(data), {
-        expiration: { type: 'EX', value: exp || DAYS_7 },
+        expiration: { type: 'EX', value: exp },
       });
 
       return { status: true, data: null, error: null };
