@@ -8,11 +8,12 @@ import {
 } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
 
+import env from '../../core/serverEnv/index.js';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
+import { MailerService } from '../../core/mailer/mailer.service.js';
 import { MINUTES_10 } from '../../common/utils/constants.js';
-import env from '../../core/serverEnv/index.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
@@ -21,6 +22,7 @@ import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 
 import {
+  generateInviteMail,
   makeOrganizationCacheKey,
   makeProjectCacheKey,
   makeUserCacheKey,
@@ -43,6 +45,7 @@ export class OrganizationsService {
     private readonly s3Service: S3Service,
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
+    private readonly mailerService: MailerService,
   ) {}
 
   private async uploadToS3(image: Express.Multer.File) {
@@ -380,11 +383,23 @@ export class OrganizationsService {
       },
     });
 
-    console.log('inviteId', inviteId);
+    const { error } = await this.mailerService.emails.send({
+      to: invitedUsersEmail,
+      subject: `Invitation to join ${organizationName.name}`,
+      html: generateInviteMail(
+        invitersInfo.fullname,
+        organizationName.name,
+        inviteId.id,
+      ),
+      from: env.MAILER_FROM,
+    });
 
-    //FIXME: SEND A MAIL TO THE INVITED USER
-    //send a mail to the user stating the role they are being invited for and the person inviting them
-    console.log(invitedUsersEmail, invitedUsersRole);
+    if (error) {
+      console.error(
+        `Failed to send invite mail to user: ${invitedUsersEmail}`,
+        error.message,
+      );
+    }
 
     return { message: 'success' };
   }
