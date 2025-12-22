@@ -61,7 +61,7 @@ export class AuthController {
 
   @UseGuards(UserAuthGuard)
   @Post('sign-out')
-  async logOut(
+  async signOut(
     @Req() req: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
@@ -71,7 +71,7 @@ export class AuthController {
       | string
       | undefined;
 
-    await this.authService.logOut(userId, refreshToken);
+    await this.authService.signOut(userId, refreshToken);
 
     response.clearCookie(TOKEN.REFRESH.TYPE);
     response.clearCookie(TOKEN.ACCESS.TYPE);

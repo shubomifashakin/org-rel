@@ -290,7 +290,7 @@ export class AuthService {
     return { message: 'success', tokens };
   }
 
-  async logOut(userId: string, refreshToken?: string) {
+  async signOut(userId: string, refreshToken?: string) {
     if (!refreshToken) {
       return { message: 'success' };
     }
