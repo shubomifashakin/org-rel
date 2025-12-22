@@ -29,9 +29,15 @@ export class RedisService
   ): Promise<ThrottlerStorageRecord> {
     const currentCount = await this.client.incr(key);
 
+    if (currentCount === 1) {
+      await this.client.expire(key, ttl);
+    }
     const resetTime = Date.now() + ttl * 1000;
+    const isBlocked = currentCount > limit;
 
-    await this.client.expire(key, ttl);
+    if (isBlocked && currentCount === limit + 1) {
+      await this.client.expire(key, ttl + blockDuration);
+    }
 
     const obj = {
       totalHits: currentCount,
