@@ -33,7 +33,7 @@ import { RedisService } from '../../core/redis/redis.service.js';
 import { MailerService } from '../../core/mailer/mailer.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 
-import { DAYS_14_MS, MINUTES_10_MS } from '../../common/utils/constants.js';
+import { DAYS_14_MS, MINUTES_10 } from '../../common/utils/constants.js';
 import { TOKEN } from '../../common/utils/constants.js';
 
 type JWT_SECRET = {
@@ -246,7 +246,7 @@ export class AuthService {
       const storeInCache = await this.redisService.setInCache(
         attemptKey,
         totalAttempts,
-        MINUTES_10_MS,
+        MINUTES_10,
       );
 
       if (!storeInCache.status) {
