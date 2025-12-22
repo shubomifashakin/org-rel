@@ -243,20 +243,21 @@ export class AuthService {
     }
 
     if (!data) {
-      const storeInCache = await this.redisService.setInCache(
+      const { status, error } = await this.redisService.setInCache(
         attemptKey,
         totalAttempts,
         MINUTES_10,
       );
 
-      if (!storeInCache.status) {
-        console.error(storeInCache.error);
+      if (!status) {
+        console.error(error);
       }
 
       if (totalAttempts >= 5) {
         console.warn(
           `TOO MAY LOGIN ATTEMPTS FOR ${existingUser.username} from ${ipAddr}`,
         );
+
         const { error } = await this.mailerService.emails.send({
           to: existingUser.email,
           subject: 'Suspicious Login Attempt',
