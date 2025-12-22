@@ -322,6 +322,19 @@ export class OrganizationsService {
     organizationId: string,
     inviteUserDto: InviteUserDto,
   ) {
+    const inviteExists = await this.databaseService.invites.findUnique({
+      where: {
+        organizationId_email: {
+          organizationId,
+          email: inviteUserDto.email,
+        },
+      },
+    });
+
+    if (inviteExists) {
+      throw new BadRequestException('User has already been invited');
+    }
+
     const invitersInfo = await this.databaseService.users.findUnique({
       where: { id: userId },
       select: { fullname: true, email: true },
