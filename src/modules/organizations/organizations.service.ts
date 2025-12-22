@@ -381,18 +381,22 @@ export class OrganizationsService {
       },
       select: {
         id: true,
+        role: true,
+        expiresAt: true,
       },
     });
 
     const { error } = await this.mailerService.emails.send({
+      from: env.MAILER_FROM,
       to: invitedUsersEmail,
       subject: `Invitation to join ${organizationName.name}`,
-      html: generateInviteMail(
-        invitersInfo.fullname,
-        organizationName.name,
-        inviteId.id,
-      ),
-      from: env.MAILER_FROM,
+      html: generateInviteMail({
+        role: inviteId.role,
+        inviteId: inviteId.id,
+        expiresAt: inviteId.expiresAt,
+        invitersName: invitersInfo.fullname,
+        organizationsName: organizationName.name,
+      }),
     });
 
     if (error) {

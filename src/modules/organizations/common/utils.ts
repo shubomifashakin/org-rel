@@ -1,3 +1,5 @@
+import { Roles } from '../../../../generated/prisma/enums.js';
+
 export const cacheKeys = {
   ORGANIZATION: 'organization:',
   PROJECT: 'project:',
@@ -17,11 +19,19 @@ export function makeOrganizationCacheKey(organizationId: string) {
 }
 
 //FIXME: IMPLEMENT THIS
-export function generateInviteMail(
-  invitersName: string,
-  organizationsName: string,
-  inviteId: string,
-) {
-  console.log(invitersName, organizationsName, inviteId);
+export function generateInviteMail({
+  role,
+  inviteId,
+  expiresAt,
+  invitersName,
+  organizationsName,
+}: {
+  role: Roles;
+  expiresAt: Date;
+  inviteId: string;
+  invitersName: string;
+  organizationsName: string;
+}) {
+  console.log(invitersName, organizationsName, inviteId, expiresAt, role);
   return '';
 }
