@@ -679,10 +679,11 @@ export class OrganizationsService {
       },
     });
 
-    const cursor = projects[projects.length - 1]?.id;
+    const hasNextPage = projects.length > limit;
+    const cursor = hasNextPage ? projects[projects.length - 1]?.id : undefined;
     return {
       projects: projects.slice(0, limit),
-      hasNextPage: projects.length > limit,
+      hasNextPage,
       ...(cursor && { cursor }),
     };
   }
