@@ -25,7 +25,6 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { SignInDto } from './common/dtos/sign-in.dto.js';
 
 import { DatabaseService } from '../../core/database/database.service.js';
-import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { MailerService } from '../../core/mailer/mailer.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
@@ -34,10 +33,6 @@ import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js
 import { DAYS_14_MS, MINUTES_10 } from '../../common/utils/constants.js';
 import { TOKEN } from '../../common/utils/constants.js';
 
-type JWT_SECRET = {
-  JWT_SECRET: string;
-};
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -45,7 +40,6 @@ export class AuthService {
     private readonly redisService: RedisService,
     private readonly mailerService: MailerService,
     private readonly s3Service: S3Service,
-    private readonly secretsManagerService: SecretsManagerService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtServiceService,
   ) {}
@@ -287,18 +281,6 @@ export class AuthService {
       return { message: 'success' };
     }
 
-    const jwtSecretName =
-      this.configService.getOrThrow<string>('JWT_SECRET_NAME');
-
-    const secret =
-      await this.secretsManagerService.getSecret<JWT_SECRET>(jwtSecretName);
-
-    if (!secret.status) {
-      console.error('Failed to get secret from secrets manager', secret.error);
-
-      throw new InternalServerErrorException('Internal Server Error');
-    }
-
     const { status, error, data } = await this.jwtService.verify(refreshToken);
 
     if (!status) {
@@ -339,18 +321,6 @@ export class AuthService {
   async refresh(ipAddr: string, oldRefreshToken?: string, userAgent?: string) {
     if (!oldRefreshToken) {
       throw new UnauthorizedException('Unauthorized');
-    }
-
-    const jwtSecretName =
-      this.configService.getOrThrow<string>('JWT_SECRET_NAME');
-
-    const secret =
-      await this.secretsManagerService.getSecret<JWT_SECRET>(jwtSecretName);
-
-    if (!secret.status) {
-      console.error('Failed to get secret from secrets manager', secret.error);
-
-      throw new InternalServerErrorException('Internal Server Error');
     }
 
     const { status, error, data } =
