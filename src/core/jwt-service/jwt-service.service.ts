@@ -42,11 +42,6 @@ export class JwtServiceService {
       );
 
       if (!secret.status) {
-        console.error(
-          'Failed to get secret from secrets manager',
-          secret.error,
-        );
-
         throw new Error(secret.error);
       }
 

@@ -10,12 +10,11 @@ import {
 
 import { RedisService } from '../redis/redis.service.js';
 
-import { MINUTES_10 } from '../../common/utils/constants.js';
 import { AppConfigService } from '../app-config/app-config.service.js';
+import { AppLoggerService } from '../app-logger/app-logger.service.js';
 
-type FnResult<T> =
-  | { status: true; data: T; error: null }
-  | { status: false; data: null; error: string };
+import { MINUTES_10 } from '../../common/utils/constants.js';
+import { FnResult } from '../../types/fnResult.js';
 
 @Injectable()
 export class SecretsManagerService
@@ -25,6 +24,7 @@ export class SecretsManagerService
   constructor(
     configService: AppConfigService,
     private readonly redisService: RedisService,
+    private readonly loggerService: AppLoggerService,
   ) {
     const awsRegion = configService.AWSRegion;
     const awsAccessKey = configService.AWSAccessKey;
@@ -52,8 +52,7 @@ export class SecretsManagerService
   }
 
   onModuleDestroy() {
-    //FIXME: LOG PROPERLY
-    console.log('destroying secrets manager service');
+    this.loggerService.log('destroying secrets manager service');
     this.destroy();
   }
 
@@ -67,7 +66,7 @@ export class SecretsManagerService
       }
 
       if (!status) {
-        console.error(error);
+        this.loggerService.error(error);
       }
 
       const secret = await this.send(
@@ -91,7 +90,7 @@ export class SecretsManagerService
       );
 
       if (!storeInCache.status) {
-        console.error(storeInCache.error);
+        this.loggerService.error(storeInCache.error);
       }
 
       return { status: true, data: jwtSecret as T, error: null };

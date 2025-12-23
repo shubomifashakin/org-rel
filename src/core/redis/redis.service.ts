@@ -4,6 +4,7 @@ import { ThrottlerStorageRecord } from '@nestjs/throttler/dist/throttler-storage
 
 import { createClient, RedisClientType } from 'redis';
 
+import { AppLoggerService } from '../app-logger/app-logger.service.js';
 import { AppConfigService } from '../app-config/app-config.service.js';
 
 import { DAYS_7 } from '../../common/utils/constants.js';
@@ -15,7 +16,10 @@ export class RedisService
 {
   private client: RedisClientType;
 
-  constructor(configService: AppConfigService) {
+  constructor(
+    configService: AppConfigService,
+    private readonly loggerService: AppLoggerService,
+  ) {
     const redisUrl = configService.RedisUrl;
     const serviceName = configService.ServiceName;
 
@@ -66,14 +70,12 @@ export class RedisService
     await this.client.connect();
 
     this.client.on('error', (err) => {
-      //FIXME: Implement proper error handling
-      console.error('Redis connection error:', err);
+      this.loggerService.error('Redis connection error:', err);
     });
   }
 
   async onModuleDestroy() {
-    //FIXME: USE BETTER LOGGING LIB
-    console.log('closing redis connection');
+    this.loggerService.log('closing redis connection');
 
     await this.client.quit();
   }

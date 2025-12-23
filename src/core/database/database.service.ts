@@ -3,13 +3,17 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../../generated/prisma/client.js';
 import { AppConfigService } from '../app-config/app-config.service.js';
+import { AppLoggerService } from '../app-logger/app-logger.service.js';
 
 @Injectable()
 export class DatabaseService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  constructor(configService: AppConfigService) {
+  constructor(
+    configService: AppConfigService,
+    private readonly loggerService: AppLoggerService,
+  ) {
     const { error, data, status } = configService.DatabaseUrl;
 
     if (!status) {
@@ -27,7 +31,7 @@ export class DatabaseService
   }
 
   async onModuleDestroy() {
-    console.log('disconnecting database');
+    this.loggerService.log('disconnecting database');
     await this.$disconnect();
   }
 }

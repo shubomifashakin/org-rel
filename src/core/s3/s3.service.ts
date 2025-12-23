@@ -5,10 +5,14 @@ import { v4 as uuid } from 'uuid';
 
 import { FnResult } from '../../types/fnResult.js';
 import { AppConfigService } from '../app-config/app-config.service.js';
+import { AppLoggerService } from '../app-logger/app-logger.service.js';
 
 @Injectable()
 export class S3Service extends S3Client implements OnModuleDestroy {
-  constructor(configService: AppConfigService) {
+  constructor(
+    configService: AppConfigService,
+    private readonly loggerService: AppLoggerService,
+  ) {
     const awsRegion = configService.AWSRegion;
     const awsAccessKey = configService.AWSAccessKey;
     const awsSecretKey = configService.AWSSecretKey;
@@ -35,8 +39,8 @@ export class S3Service extends S3Client implements OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    //FIXME: LOG PROPERLY
-    console.log('S3Service is being destroyed');
+    this.loggerService.log('S3Service is being destroyed');
+
     this.destroy();
   }
 
