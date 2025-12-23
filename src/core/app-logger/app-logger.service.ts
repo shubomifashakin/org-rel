@@ -48,7 +48,7 @@ export class AppLoggerService
     });
 
     const selectedTransports =
-      this.configService.Environment.data === 'development'
+      this.configService.Environment.data === 'production'
         ? [combinedTransport, errorTransport]
         : [consoleTransport];
 
