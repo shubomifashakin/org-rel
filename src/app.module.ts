@@ -57,8 +57,13 @@ import { AppLoggerModule } from './core/app-logger/app-logger.module.js';
           },
 
           storage: {
-            increment(key, ttl, limit, blockDuration) {
-              return redisService.increment(key, ttl, limit, blockDuration);
+            async increment(key, ttl, limit, blockDuration) {
+              return await redisService.increment(
+                key,
+                ttl,
+                limit,
+                blockDuration,
+              );
             },
           },
         };

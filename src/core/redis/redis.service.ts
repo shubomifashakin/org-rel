@@ -35,6 +35,7 @@ export class RedisService
       pingInterval: 10,
       url: redisUrl.data,
       name: serviceName.data,
+      disableOfflineQueue: true,
     });
   }
 
@@ -44,26 +45,37 @@ export class RedisService
     limit: number,
     blockDuration: number,
   ): Promise<ThrottlerStorageRecord> {
-    const currentCount = await this.client.incr(key);
+    try {
+      const currentCount = await this.client.incr(key);
 
-    if (currentCount === 1) {
-      await this.client.expire(key, ttl);
+      if (currentCount === 1) {
+        await this.client.expire(key, ttl);
+      }
+      const resetTime = Date.now() + ttl * 1000;
+      const isBlocked = currentCount > limit;
+
+      if (isBlocked && currentCount === limit + 1) {
+        await this.client.expire(key, ttl + blockDuration);
+      }
+
+      const obj = {
+        totalHits: currentCount,
+        isBlocked: currentCount >= limit,
+        timeToExpire: resetTime,
+        timeToBlockExpire: resetTime + blockDuration * 1000,
+      };
+
+      return obj;
+    } catch (error) {
+      //dont let redis throttling issues block users from using the app
+      this.loggerService.error(error);
+      return {
+        totalHits: 0,
+        isBlocked: false,
+        timeToExpire: 0,
+        timeToBlockExpire: 0,
+      };
     }
-    const resetTime = Date.now() + ttl * 1000;
-    const isBlocked = currentCount > limit;
-
-    if (isBlocked && currentCount === limit + 1) {
-      await this.client.expire(key, ttl + blockDuration);
-    }
-
-    const obj = {
-      totalHits: currentCount,
-      isBlocked: currentCount >= limit,
-      timeToExpire: resetTime,
-      timeToBlockExpire: resetTime + blockDuration * 1000,
-    };
-
-    return obj;
   }
 
   async onModuleInit() {
