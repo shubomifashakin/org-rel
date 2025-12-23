@@ -22,6 +22,7 @@ import { AccountsModule } from './modules/accounts/accounts.module.js';
 import { MailerModule } from './core/mailer/mailer.module.js';
 import { JwtServiceModule } from './core/jwt-service/jwt-service.module.js';
 import { AppConfigModule } from './core/app-config/app-config.module.js';
+import { AppLoggerModule } from './core/app-logger/app-logger.module.js';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AppConfigModule } from './core/app-config/app-config.module.js';
     RedisModule,
     JwtServiceModule,
     AppConfigModule,
+    AppLoggerModule,
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [RedisService],
