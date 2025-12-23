@@ -31,6 +31,7 @@ import { JwtServiceModule } from './core/jwt-service/jwt-service.module.js';
     RedisModule,
     LoggerModule,
     JwtServiceModule,
+    //FIXME: VALIDATE CONFIG SERVICE
     ConfigModule.forRoot(),
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
