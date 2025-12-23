@@ -17,6 +17,7 @@ import {
   compareHashedString,
   generateSuspiciousLoginMail,
   hashString,
+  makeBlacklistedKey,
 } from '../../common/utils/fns.js';
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
@@ -46,7 +47,7 @@ export class AuthService {
 
   private async generateJwts(
     accessClaims: JWTPayload,
-    refreshClaims: JWTPayload & { tokenId: string },
+    refreshClaims: JWTPayload,
   ) {
     const accessTokenReq = this.jwtService.sign(
       {
@@ -85,14 +86,16 @@ export class AuthService {
     userAgent?: string,
   ) {
     const tokenId = uuid();
+    const accessTokenId = uuid();
 
     const { accessToken, refreshToken } = await this.generateJwts(
       {
+        jti: accessTokenId,
         sub: userData.id,
         email: userData.email,
       },
       {
-        tokenId,
+        jti: tokenId,
         sub: userData.id,
         email: userData.email,
       },
@@ -286,9 +289,12 @@ export class AuthService {
     return { message: 'success', tokens };
   }
 
-  async signOut(userId: string, refreshToken?: string) {
-    if (!refreshToken) {
-      return { message: 'success' };
+  async signOut(userId: string, refreshToken: string, accessToken: string) {
+    const accessKeyReq = await this.jwtService.verify(accessToken);
+
+    if (!accessKeyReq.status) {
+      console.error(accessKeyReq.error);
+      throw new InternalServerErrorException();
     }
 
     const { status, error, data } = await this.jwtService.verify(refreshToken);
@@ -299,20 +305,16 @@ export class AuthService {
       throw new InternalServerErrorException('Internal Server Error');
     }
 
-    if (!data) {
+    if (!data?.jti) {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    const tokenId = data?.tokenId as string;
-
-    if (!tokenId) {
-      throw new UnauthorizedException('Unauthorized');
-    }
+    const refreshTokenJti = data.jti;
 
     const sessionExists = await this.databaseService.refreshTokens.findUnique({
       where: {
         userId,
-        id: tokenId,
+        id: refreshTokenJti,
       },
       select: {
         id: true,
@@ -323,6 +325,20 @@ export class AuthService {
       await this.databaseService.refreshTokens.delete({
         where: { id: sessionExists.id },
       });
+    }
+
+    if (accessKeyReq.data?.jti) {
+      const accessKeyId = accessKeyReq.data.jti;
+
+      const { status, error } = await this.redisService.setInCache(
+        makeBlacklistedKey(accessKeyId),
+        true,
+        MINUTES_10,
+      );
+
+      if (!status) {
+        console.error(error);
+      }
     }
 
     return { message: 'success' };
@@ -342,16 +358,16 @@ export class AuthService {
       throw new InternalServerErrorException('Internal Server Error');
     }
 
-    if (!data) {
+    if (!data?.jti) {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    const tokenId = data?.tokenId as string;
+    const refreshTokenJti = data?.jti;
 
     const refreshTokenExists =
       await this.databaseService.refreshTokens.findUnique({
         where: {
-          id: tokenId,
+          id: refreshTokenJti,
         },
         select: {
           expiresAt: true,
@@ -368,18 +384,14 @@ export class AuthService {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    if (refreshTokenExists.expiresAt < new Date()) {
-      await this.databaseService.refreshTokens.delete({
-        where: { id: tokenId },
-      });
+    //delete the old token
+    await this.databaseService.refreshTokens.delete({
+      where: { id: refreshTokenJti },
+    });
 
+    if (refreshTokenExists.expiresAt < new Date()) {
       throw new UnauthorizedException('Unauthorized');
     }
-
-    //delete the old refresh token
-    await this.databaseService.refreshTokens.delete({
-      where: { id: tokenId },
-    });
 
     //generate new ones
     const tokens = await this.handleAuthenticate(

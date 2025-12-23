@@ -62,6 +62,7 @@ export class JwtServiceService {
         .setIssuer(serviceName.data)
         .setAudience(audience.data)
         .setExpirationTime(exp)
+        .setJti(payload.jti!)
         .sign(encodedSecret);
 
       return { status: true, data: jwt, error: null };

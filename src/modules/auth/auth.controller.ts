@@ -67,11 +67,10 @@ export class AuthController {
   ) {
     const userId = req.user.id;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const refreshToken = req.cookies?.[TOKEN.REFRESH.TYPE] as
-      | string
-      | undefined;
+    const refreshToken = req.cookies?.[TOKEN.REFRESH.TYPE] as string;
+    const accessToken = req.cookies?.[TOKEN.ACCESS.TYPE] as string;
 
-    await this.authService.signOut(userId, refreshToken);
+    await this.authService.signOut(userId, refreshToken, accessToken);
 
     response.clearCookie(TOKEN.REFRESH.TYPE);
     response.clearCookie(TOKEN.ACCESS.TYPE);

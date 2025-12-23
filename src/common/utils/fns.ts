@@ -49,6 +49,10 @@ export async function compareHashedString({
   }
 }
 
+export function makeBlacklistedKey(key: string) {
+  return `blacklisted:${key}`;
+}
+
 export function generateSuspiciousLoginMail(ipAddr: string) {
   const temp = `<!DOCTYPE html>
 <html>
