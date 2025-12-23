@@ -1,21 +1,22 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { DatabaseService } from '../../../core/database/database.service.js';
 import { MailerService } from '../../../core/mailer/mailer.service.js';
 import { InviteUserDto } from './../dto/invite-user.dto.js';
 import { generateInviteMail } from '../common/utils.js';
+import { AppConfigService } from '../../../core/app-config/app-config.service.js';
 
 @Injectable()
 export class OrganizationsInviteService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly mailerService: MailerService,
-    private readonly configService: ConfigService,
+    private readonly configService: AppConfigService,
   ) {}
 
   async inviteOneUser(
@@ -82,10 +83,16 @@ export class OrganizationsInviteService {
       },
     });
 
-    const mailerFrom = this.configService.getOrThrow<string>('MAILER_FROM');
+    const mailerFrom = this.configService.MailerFrom;
+
+    if (!mailerFrom.status) {
+      console.error(mailerFrom.error);
+
+      throw new InternalServerErrorException('Internal Server Error');
+    }
 
     const { error } = await this.mailerService.emails.send({
-      from: mailerFrom,
+      from: mailerFrom.data,
       to: invitedUsersEmail,
       subject: `Invitation to join ${organizationInfo.name}`,
       html: generateInviteMail({

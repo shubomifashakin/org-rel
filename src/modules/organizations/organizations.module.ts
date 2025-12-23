@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 
 import { OrganizationsController } from './organizations.controller.js';
 
@@ -14,6 +13,7 @@ import { MailerModule } from '../../core/mailer/mailer.module.js';
 import { DatabaseModule } from '../../core/database/database.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
 import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
+import { AppConfigModule } from '../../core/app-config/app-config.module.js';
 
 @Module({
   imports: [
@@ -22,7 +22,7 @@ import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
     RedisModule,
     SecretsManagerModule,
     MailerModule,
-    ConfigModule,
+    AppConfigModule,
     JwtServiceModule,
   ],
   providers: [

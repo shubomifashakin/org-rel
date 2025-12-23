@@ -1,23 +1,35 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { v4 as uuid } from 'uuid';
 
 import { FnResult } from '../../types/fnResult.js';
+import { AppConfigService } from '../app-config/app-config.service.js';
 
 @Injectable()
 export class S3Service extends S3Client implements OnModuleDestroy {
-  constructor(configService: ConfigService) {
-    const awsRegion = configService.getOrThrow<string>('AWS_REGION');
-    const awsAccessKey = configService.getOrThrow<string>('AWS_ACCESS_KEY');
-    const awsSecretKey = configService.getOrThrow<string>('AWS_SECRET_KEY');
+  constructor(configService: AppConfigService) {
+    const awsRegion = configService.AWSRegion;
+    const awsAccessKey = configService.AWSAccessKey;
+    const awsSecretKey = configService.AWSSecretKey;
+
+    if (!awsRegion.status) {
+      throw new Error(awsRegion.error);
+    }
+
+    if (!awsAccessKey.status) {
+      throw new Error(awsAccessKey.error);
+    }
+
+    if (!awsSecretKey.status) {
+      throw new Error(awsSecretKey.error);
+    }
 
     super({
-      region: awsRegion,
+      region: awsRegion.data,
       credentials: {
-        accessKeyId: awsAccessKey,
-        secretAccessKey: awsSecretKey,
+        accessKeyId: awsAccessKey.data,
+        secretAccessKey: awsSecretKey.data,
       },
     });
   }

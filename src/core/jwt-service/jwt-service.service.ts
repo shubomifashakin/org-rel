@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import * as jose from 'jose';
 
+import { AppConfigService } from '../app-config/app-config.service.js';
 import { SecretsManagerService } from '../secrets-manager/secrets-manager.service.js';
+
 import { FnResult } from '../../types/fnResult.js';
 
 type JWT_SECRET = {
@@ -13,20 +14,32 @@ type JWT_SECRET = {
 @Injectable()
 export class JwtServiceService {
   constructor(
-    private readonly configService: ConfigService,
+    private readonly configService: AppConfigService,
     private readonly secretsManagerService: SecretsManagerService,
   ) {}
 
   async sign(payload: jose.JWTPayload, exp = '5m'): Promise<FnResult<string>> {
     try {
-      const secretName =
-        this.configService.getOrThrow<string>('JWT_SECRET_NAME');
-      const serviceName = this.configService.getOrThrow<string>('SERVICE_NAME');
-      const clientDomain =
-        this.configService.getOrThrow<string>('CLIENT_DOMAIN');
+      const secretName = this.configService.JWTSecretName;
 
-      const secret =
-        await this.secretsManagerService.getSecret<JWT_SECRET>(secretName);
+      if (!secretName.status) {
+        throw new Error(secretName.error);
+      }
+
+      const serviceName = this.configService.ServiceName;
+
+      if (!serviceName.status) {
+        throw new Error(serviceName.error);
+      }
+
+      const audience = this.configService.ClientDomainName;
+      if (!audience.status) {
+        throw new Error(audience.error);
+      }
+
+      const secret = await this.secretsManagerService.getSecret<JWT_SECRET>(
+        secretName.data,
+      );
 
       if (!secret.status) {
         console.error(
@@ -46,8 +59,8 @@ export class JwtServiceService {
           alg: 'HS256',
         })
         .setIssuedAt()
-        .setIssuer(serviceName)
-        .setAudience(clientDomain)
+        .setIssuer(serviceName.data)
+        .setAudience(audience.data)
         .setExpirationTime(exp)
         .sign(encodedSecret);
 
@@ -63,26 +76,38 @@ export class JwtServiceService {
 
   async verify(jwt: string): Promise<FnResult<jose.JWTPayload | null>> {
     try {
-      const secretName =
-        this.configService.getOrThrow<string>('JWT_SECRET_NAME');
+      const secretName = this.configService.JWTSecretName;
 
-      const secret =
-        await this.secretsManagerService.getSecret<JWT_SECRET>(secretName);
+      if (!secretName.status) {
+        throw new Error(secretName.error);
+      }
+
+      const secret = await this.secretsManagerService.getSecret<JWT_SECRET>(
+        secretName.data,
+      );
 
       if (!secret.status) {
         throw new Error(secret.error);
       }
 
-      const serviceName = this.configService.getOrThrow<string>('SERVICE_NAME');
-      const clientDomain =
-        this.configService.getOrThrow<string>('CLIENT_DOMAIN');
+      const serviceName = this.configService.ServiceName;
+
+      if (!serviceName.status) {
+        throw new Error(serviceName.error);
+      }
+
+      const audience = this.configService.ClientDomainName;
+
+      if (!audience.status) {
+        throw new Error(audience.error);
+      }
 
       const { payload } = await jose.jwtVerify(
         jwt,
         new TextEncoder().encode(secret.data.JWT_SECRET),
         {
-          issuer: serviceName,
-          audience: clientDomain,
+          issuer: serviceName.data,
+          audience: audience.data,
         },
       );
 

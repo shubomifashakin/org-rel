@@ -4,18 +4,19 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { v4 as uuid } from 'uuid';
 
 import { S3Service } from '../../core/s3/s3.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { DatabaseService } from '../../core/database/database.service.js';
+import { AppConfigService } from '../../core/app-config/app-config.service.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 
 import { makeOrganizationCacheKey } from './common/utils.js';
 import { Organizations } from '../../../generated/prisma/client.js';
+import { FnResult } from 'src/types/fnResult.js';
 
 type CachedOrg = Pick<Organizations, 'id' | 'name' | 'image' | 'createdAt'>;
 
@@ -25,15 +26,22 @@ export class OrganizationsService {
     private readonly s3Service: S3Service,
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
-    private readonly configService: ConfigService,
+    private readonly configService: AppConfigService,
   ) {}
 
-  private async uploadToS3(image: Express.Multer.File) {
+  private async uploadToS3(
+    image: Express.Multer.File,
+  ): Promise<FnResult<string>> {
     const imageKey = uuid();
 
-    const bucketName = this.configService.getOrThrow<string>('S3_BUCKET_NAME');
+    const { status, data, error } = this.configService.S3BucketName;
 
-    const result = await this.s3Service.uploadToS3(bucketName, image, imageKey);
+    if (!status) {
+      console.warn(error);
+      return { status: false, data: null, error };
+    }
+
+    const result = await this.s3Service.uploadToS3(data, image, imageKey);
 
     return result;
   }

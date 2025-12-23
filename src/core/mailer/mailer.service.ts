@@ -1,13 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { Resend } from 'resend';
 
+import { AppConfigService } from '../app-config/app-config.service.js';
+
 @Injectable()
 export class MailerService extends Resend {
-  constructor(configService: ConfigService) {
-    const resendApiKey = configService.getOrThrow<string>('RESEND_API_KEY');
+  constructor(configService: AppConfigService) {
+    const { status, data, error } = configService.ResendApiKey;
 
-    super(resendApiKey);
+    if (!status) {
+      throw new Error(error);
+    }
+
+    super(data);
   }
 }

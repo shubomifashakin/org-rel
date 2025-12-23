@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -9,6 +8,7 @@ import { MailerModule } from '../../core/mailer/mailer.module.js';
 import { RedisModule } from '../../core/redis/redis.module.js';
 import { S3Module } from '../../core/s3/s3.module.js';
 import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
+import { AppConfigModule } from '../../core/app-config/app-config.module.js';
 
 @Module({
   imports: [
@@ -16,7 +16,7 @@ import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
     MailerModule,
     RedisModule,
     S3Module,
-    ConfigModule,
+    AppConfigModule,
     JwtServiceModule,
   ],
   providers: [AuthService],

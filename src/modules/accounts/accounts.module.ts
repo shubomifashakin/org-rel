@@ -1,4 +1,3 @@
-import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 
 import { AccountsService } from './accounts.service.js';
@@ -9,6 +8,7 @@ import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager
 import { S3Module } from '../../core/s3/s3.module.js';
 import { RedisModule } from '../../core/redis/redis.module.js';
 import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
+import { AppConfigModule } from '../../core/app-config/app-config.module.js';
 
 @Module({
   providers: [AccountsService],
@@ -18,7 +18,7 @@ import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
     SecretsManagerModule,
     S3Module,
     RedisModule,
-    ConfigModule,
+    AppConfigModule,
     JwtServiceModule,
   ],
 })

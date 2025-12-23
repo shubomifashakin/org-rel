@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 
 import { SecretsManagerService } from './secrets-manager.service.js';
 import { RedisModule } from '../redis/redis.module.js';
+import { AppConfigModule } from '../app-config/app-config.module.js';
 
 @Module({
-  imports: [RedisModule, ConfigModule],
+  imports: [RedisModule, AppConfigModule],
   exports: [SecretsManagerService],
   providers: [SecretsManagerService],
 })

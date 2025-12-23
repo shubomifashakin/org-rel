@@ -7,7 +7,6 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { ConfigModule } from '@nestjs/config';
 
 import { DatabaseModule } from './core/database/database.module.js';
 import { S3Module } from './core/s3/s3.module.js';
@@ -23,6 +22,7 @@ import { AccountsModule } from './modules/accounts/accounts.module.js';
 import { MailerModule } from './core/mailer/mailer.module.js';
 import { LoggerModule } from './core/logger/logger.module.js';
 import { JwtServiceModule } from './core/jwt-service/jwt-service.module.js';
+import { AppConfigModule } from './core/app-config/app-config.module.js';
 
 @Module({
   imports: [
@@ -31,8 +31,7 @@ import { JwtServiceModule } from './core/jwt-service/jwt-service.module.js';
     RedisModule,
     LoggerModule,
     JwtServiceModule,
-    //FIXME: VALIDATE CONFIG SERVICE
-    ConfigModule.forRoot(),
+    AppConfigModule,
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [RedisService],

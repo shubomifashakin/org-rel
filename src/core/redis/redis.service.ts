@@ -1,9 +1,10 @@
 import { ThrottlerStorage } from '@nestjs/throttler';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ThrottlerStorageRecord } from '@nestjs/throttler/dist/throttler-storage-record.interface.js';
-import { ConfigService } from '@nestjs/config';
 
 import { createClient, RedisClientType } from 'redis';
+
+import { AppConfigService } from '../app-config/app-config.service.js';
 
 import { DAYS_7 } from '../../common/utils/constants.js';
 import { FnResult } from '../../types/fnResult.js';
@@ -14,14 +15,22 @@ export class RedisService
 {
   private client: RedisClientType;
 
-  constructor(configService: ConfigService) {
-    const redisUrl = configService.getOrThrow<string>('REDIS_URL');
-    const serviceName = configService.getOrThrow<string>('SERVICE_NAME');
+  constructor(configService: AppConfigService) {
+    const redisUrl = configService.RedisUrl;
+    const serviceName = configService.ServiceName;
+
+    if (!redisUrl.status) {
+      throw new Error(redisUrl.error);
+    }
+
+    if (!serviceName.status) {
+      throw new Error(serviceName.error);
+    }
 
     this.client = createClient({
       pingInterval: 10,
-      url: redisUrl,
-      name: serviceName,
+      url: redisUrl.data,
+      name: serviceName.data,
     });
   }
 

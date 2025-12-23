@@ -9,7 +9,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { Users } from '../../../generated/prisma/client.js';
 
@@ -29,6 +28,7 @@ import { RedisService } from '../../core/redis/redis.service.js';
 import { MailerService } from '../../core/mailer/mailer.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
+import { AppConfigService } from '../../core/app-config/app-config.service.js';
 
 import { DAYS_14_MS, MINUTES_10 } from '../../common/utils/constants.js';
 import { TOKEN } from '../../common/utils/constants.js';
@@ -40,7 +40,7 @@ export class AuthService {
     private readonly redisService: RedisService,
     private readonly mailerService: MailerService,
     private readonly s3Service: S3Service,
-    private readonly configService: ConfigService,
+    private readonly configService: AppConfigService,
     private readonly jwtService: JwtServiceService,
   ) {}
 
@@ -130,11 +130,15 @@ export class AuthService {
       let s3Url: string | undefined;
 
       if (file) {
-        const bucketName =
-          this.configService.getOrThrow<string>('S3_BUCKET_NAME');
+        const bucketName = this.configService.S3BucketName;
+
+        if (!bucketName.status) {
+          console.error(bucketName.error);
+          throw new InternalServerErrorException('Internal Server Error');
+        }
 
         const { status, data, error } = await this.s3Service.uploadToS3(
-          bucketName,
+          bucketName.data,
           file,
         );
 
@@ -241,20 +245,26 @@ export class AuthService {
           `TOO MAY LOGIN ATTEMPTS FOR ${existingUser.username} from ${ipAddr}`,
         );
 
-        const mailerFrom = this.configService.getOrThrow<string>('MAILER_FROM');
+        const mailerFrom = this.configService.MailerFrom;
 
-        const { error } = await this.mailerService.emails.send({
-          to: existingUser.email,
-          subject: 'Suspicious Login Attempt',
-          html: generateSuspiciousLoginMail(ipAddr),
-          from: mailerFrom,
-        });
+        if (!mailerFrom.status) {
+          console.error(mailerFrom.error);
+        }
 
-        if (error) {
-          console.error(
-            `Failed to send suspicious login mail to user:${existingUser.id}`,
-            error.message,
-          );
+        if (mailerFrom.status) {
+          const { error } = await this.mailerService.emails.send({
+            to: existingUser.email,
+            subject: 'Suspicious Login Attempt',
+            html: generateSuspiciousLoginMail(ipAddr),
+            from: mailerFrom.data,
+          });
+
+          if (error) {
+            console.error(
+              `Failed to send suspicious login mail to user:${existingUser.id}`,
+              error.message,
+            );
+          }
         }
       }
 

@@ -3,7 +3,6 @@ import {
   InternalServerErrorException,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   GetSecretValueCommand,
   SecretsManagerClient,
@@ -12,6 +11,7 @@ import {
 import { RedisService } from '../redis/redis.service.js';
 
 import { MINUTES_10 } from '../../common/utils/constants.js';
+import { AppConfigService } from '../app-config/app-config.service.js';
 
 type FnResult<T> =
   | { status: true; data: T; error: null }
@@ -23,18 +23,30 @@ export class SecretsManagerService
   implements OnModuleDestroy
 {
   constructor(
-    config: ConfigService,
+    configService: AppConfigService,
     private readonly redisService: RedisService,
   ) {
-    const region = config.getOrThrow<string>('AWS_REGION');
-    const accessKeyId = config.getOrThrow<string>('AWS_ACCESS_KEY');
-    const secretAccessKey = config.getOrThrow<string>('AWS_SECRET_KEY');
+    const awsRegion = configService.AWSRegion;
+    const awsAccessKey = configService.AWSAccessKey;
+    const awsSecretKey = configService.AWSSecretKey;
+
+    if (!awsRegion.status) {
+      throw new Error(awsRegion.error);
+    }
+
+    if (!awsAccessKey.status) {
+      throw new Error(awsAccessKey.error);
+    }
+
+    if (!awsSecretKey.status) {
+      throw new Error(awsSecretKey.error);
+    }
 
     super({
-      region,
+      region: awsRegion.data,
       credentials: {
-        accessKeyId,
-        secretAccessKey,
+        accessKeyId: awsAccessKey.data,
+        secretAccessKey: awsSecretKey.data,
       },
     });
   }
