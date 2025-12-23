@@ -6,15 +6,15 @@ import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app.module.js';
 import env from './core/serverEnv/index.js';
-import { LoggerService } from './core/logger/logger.service.js';
+// import { MyLogger } from './core/logger/logger.service.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: { methods: ['GET', 'POST', 'PUT', 'DELETE'], origin: '*' },
-    bufferLogs: true,
+    // bufferLogs: true,
   });
 
-  app.useLogger(app.get(LoggerService));
+  // app.useLogger(app.get(MyLogger));
   app.setGlobalPrefix('api/v1', { exclude: ['health'] });
   app.use(compression());
   app.use(cookieParser());

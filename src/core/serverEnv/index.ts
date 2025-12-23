@@ -14,6 +14,7 @@ const env = {
   CLIENT_DOMAIN: process.env.CLIENT_DOMAIN!,
   RESEND_API_KEY: process.env.RESEND_API_KEY!,
   MAILER_FROM: process.env.MAILER_FROM!,
+  ENVIRONMENT: process.env.NODE_ENV!,
 };
 
 export default env;
