@@ -87,9 +87,28 @@ export class RedisService
   }
 
   async onModuleDestroy() {
-    this.loggerService.log('closing redis connection');
+    this.loggerService.log('Closing Redis...');
 
-    await this.client.quit();
+    const shutdownWithTimeout = async () => {
+      try {
+        await this.client.quit();
+        this.loggerService.log('Redis connection closed successfully');
+      } catch (error) {
+        this.loggerService.warn(
+          'Graceful Redis shutdown failed, forcing close',
+          error,
+        );
+        this.client.destroy();
+        this.loggerService.log('Redis connection force closed');
+      }
+    };
+
+    return Promise.race([
+      shutdownWithTimeout(),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]).catch((error) => {
+      this.loggerService.error('Error during Redis shutdown', error);
+    });
   }
 
   /**
