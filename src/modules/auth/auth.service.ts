@@ -304,6 +304,10 @@ export class AuthService {
     if (!status) {
       //FIXME:
       console.error('logout error', error);
+      throw new InternalServerErrorException('Internal Server Error');
+    }
+
+    if (!data) {
       throw new UnauthorizedException('Unauthorized');
     }
 
@@ -355,6 +359,10 @@ export class AuthService {
     if (!status) {
       //FIXME:
       console.error('refresh error', error);
+      throw new InternalServerErrorException('Unauthorized');
+    }
+
+    if (!data) {
       throw new UnauthorizedException('Unauthorized');
     }
 

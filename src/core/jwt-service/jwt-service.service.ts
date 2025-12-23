@@ -61,7 +61,7 @@ export class JwtServiceService {
     }
   }
 
-  async verify(jwt: string): Promise<FnResult<jose.JWTPayload>> {
+  async verify(jwt: string): Promise<FnResult<jose.JWTPayload | null>> {
     try {
       const secretName =
         this.configService.getOrThrow<string>('JWT_SECRET_NAME');
@@ -89,14 +89,17 @@ export class JwtServiceService {
       return { status: true, data: payload, error: null };
     } catch (error: unknown) {
       if (error instanceof jose.errors.JWTExpired) {
-        return { status: false, data: null, error: 'Token has expired' };
+        return { status: true, data: null, error: null };
       }
+
       if (error instanceof jose.errors.JWTClaimValidationFailed) {
-        return { status: false, data: null, error: 'Invalid token claims' };
+        return { status: true, data: null, error: null };
       }
+
       if (error instanceof jose.errors.JWSInvalid) {
-        return { status: false, data: null, error: 'Invalid JWT format' };
+        return { status: true, data: null, error: null };
       }
+
       if (error instanceof Error) {
         return { status: false, data: null, error: error.message };
       }

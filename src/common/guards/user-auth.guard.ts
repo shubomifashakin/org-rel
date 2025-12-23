@@ -50,7 +50,11 @@ export class UserAuthGuard implements CanActivate {
 
       if (!status) {
         //FIXME: USE BETTER LOGGER IMPLEMENTATION
-        console.log(error);
+        console.error(error);
+        throw new InternalServerErrorException('Unauthorized');
+      }
+
+      if (!data) {
         throw new UnauthorizedException('Unauthorized');
       }
 
