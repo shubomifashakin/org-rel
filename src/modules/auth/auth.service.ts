@@ -359,7 +359,7 @@ export class AuthService {
     if (!status) {
       //FIXME:
       console.error('refresh error', error);
-      throw new InternalServerErrorException('Unauthorized');
+      throw new InternalServerErrorException('Internal Server Error');
     }
 
     if (!data) {
