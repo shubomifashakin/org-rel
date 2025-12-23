@@ -8,6 +8,7 @@ import { DatabaseModule } from '../../core/database/database.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
 import { S3Module } from '../../core/s3/s3.module.js';
 import { RedisModule } from '../../core/redis/redis.module.js';
+import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 
 @Module({
   providers: [AccountsService],
@@ -18,6 +19,7 @@ import { RedisModule } from '../../core/redis/redis.module.js';
     S3Module,
     RedisModule,
     ConfigModule,
+    JwtServiceModule,
   ],
 })
 export class AccountsModule {}

@@ -22,6 +22,7 @@ import { SecretsManagerModule } from './core/secrets-manager/secrets-manager.mod
 import { AccountsModule } from './modules/accounts/accounts.module.js';
 import { MailerModule } from './core/mailer/mailer.module.js';
 import { LoggerModule } from './core/logger/logger.module.js';
+import { JwtServiceModule } from './core/jwt-service/jwt-service.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { LoggerModule } from './core/logger/logger.module.js';
     DatabaseModule,
     RedisModule,
     LoggerModule,
+    JwtServiceModule,
     ConfigModule.forRoot(),
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],

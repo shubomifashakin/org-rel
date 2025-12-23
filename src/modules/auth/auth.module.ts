@@ -9,6 +9,7 @@ import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager
 import { MailerModule } from '../../core/mailer/mailer.module.js';
 import { RedisModule } from '../../core/redis/redis.module.js';
 import { S3Module } from '../../core/s3/s3.module.js';
+import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { S3Module } from '../../core/s3/s3.module.js';
     RedisModule,
     S3Module,
     ConfigModule,
+    JwtServiceModule,
   ],
   providers: [AuthService],
   controllers: [AuthController],

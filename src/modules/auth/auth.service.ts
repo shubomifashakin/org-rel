@@ -16,10 +16,8 @@ import { Users } from '../../../generated/prisma/client.js';
 import { SignUpDto } from './common/dtos/sign-up.dto.js';
 import {
   compareHashedString,
-  generateJwt,
   generateSuspiciousLoginMail,
   hashString,
-  verifyJwt,
 } from '../../common/utils/fns.js';
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
@@ -31,6 +29,7 @@ import { SecretsManagerService } from '../../core/secrets-manager/secrets-manage
 import { RedisService } from '../../core/redis/redis.service.js';
 import { MailerService } from '../../core/mailer/mailer.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
+import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
 
 import { DAYS_14_MS, MINUTES_10 } from '../../common/utils/constants.js';
 import { TOKEN } from '../../common/utils/constants.js';
@@ -48,27 +47,14 @@ export class AuthService {
     private readonly s3Service: S3Service,
     private readonly secretsManagerService: SecretsManagerService,
     private readonly configService: ConfigService,
+    private readonly jwtService: JwtServiceService,
   ) {}
 
   private async generateJwts(
     accessClaims: JWTPayload,
     refreshClaims: JWTPayload & { tokenId: string },
   ) {
-    const secretName = this.configService.getOrThrow<string>('JWT_SECRET_NAME');
-
-    const secret =
-      await this.secretsManagerService.getSecret<JWT_SECRET>(secretName);
-
-    if (!secret.status) {
-      console.error('Failed to get secret from secrets manager', secret.error);
-
-      throw new InternalServerErrorException('Internal Server Error');
-    }
-
-    const { JWT_SECRET } = secret.data;
-
-    const accessTokenReq = generateJwt(
-      JWT_SECRET,
+    const accessTokenReq = this.jwtService.sign(
       {
         ...accessClaims,
         type: TOKEN.ACCESS.TYPE,
@@ -76,8 +62,7 @@ export class AuthService {
       TOKEN.ACCESS.EXPIRATION,
     );
 
-    const refreshTokenReq = generateJwt(
-      JWT_SECRET,
+    const refreshTokenReq = this.jwtService.sign(
       { ...refreshClaims, type: TOKEN.REFRESH.TYPE },
       TOKEN.REFRESH.EXPIRATION,
     );
@@ -94,7 +79,7 @@ export class AuthService {
         accessToken.error || refreshToken.error,
       );
 
-      throw new InternalServerErrorException('Something went wrong');
+      throw new InternalServerErrorException('Internal Server Error');
     }
 
     return { accessToken: accessToken.data, refreshToken: refreshToken.data };
@@ -124,7 +109,7 @@ export class AuthService {
     if (!status) {
       console.log('failed to hash refresh token', error);
 
-      throw new InternalServerErrorException('Something went wrong');
+      throw new InternalServerErrorException('Internal Server Error');
     }
 
     await this.databaseService.refreshTokens.create({
@@ -172,7 +157,7 @@ export class AuthService {
         //FIXME: USE A BETTER LOGGER IMPLEMENTATION
         console.error(error);
 
-        throw new InternalServerErrorException('Something went wrong');
+        throw new InternalServerErrorException('Internal Server Error');
       }
 
       const userData = await this.databaseService.users.create({
@@ -314,10 +299,7 @@ export class AuthService {
       throw new InternalServerErrorException('Internal Server Error');
     }
 
-    const { status, error, data } = await verifyJwt(
-      refreshToken,
-      secret.data.JWT_SECRET,
-    );
+    const { status, error, data } = await this.jwtService.verify(refreshToken);
 
     if (!status) {
       //FIXME:
@@ -367,10 +349,8 @@ export class AuthService {
       throw new InternalServerErrorException('Internal Server Error');
     }
 
-    const { status, error, data } = await verifyJwt(
-      oldRefreshToken,
-      secret.data.JWT_SECRET,
-    );
+    const { status, error, data } =
+      await this.jwtService.verify(oldRefreshToken);
 
     if (!status) {
       //FIXME:

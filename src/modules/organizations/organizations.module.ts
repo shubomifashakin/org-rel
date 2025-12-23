@@ -13,6 +13,7 @@ import { RedisModule } from '../../core/redis/redis.module.js';
 import { MailerModule } from '../../core/mailer/mailer.module.js';
 import { DatabaseModule } from '../../core/database/database.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
+import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager
     SecretsManagerModule,
     MailerModule,
     ConfigModule,
+    JwtServiceModule,
   ],
   providers: [
     OrganizationsService,
