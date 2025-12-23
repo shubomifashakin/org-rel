@@ -297,6 +297,21 @@ export class AuthService {
       throw new InternalServerErrorException();
     }
 
+    if (accessKeyReq.data?.jti) {
+      //blacklist the accesstoken immeidiately
+      const accessKeyId = accessKeyReq.data.jti;
+
+      const { status, error } = await this.redisService.setInCache(
+        makeBlacklistedKey(accessKeyId),
+        true,
+        MINUTES_10,
+      );
+
+      if (!status) {
+        console.error(error);
+      }
+    }
+
     const { status, error, data } = await this.jwtService.verify(refreshToken);
 
     if (!status) {
@@ -306,7 +321,8 @@ export class AuthService {
     }
 
     if (!data?.jti) {
-      throw new UnauthorizedException('Unauthorized');
+      //if theres no jti then nothing to revoke
+      return { message: 'success' };
     }
 
     const refreshTokenJti = data.jti;
@@ -325,20 +341,6 @@ export class AuthService {
       await this.databaseService.refreshTokens.delete({
         where: { id: sessionExists.id },
       });
-    }
-
-    if (accessKeyReq.data?.jti) {
-      const accessKeyId = accessKeyReq.data.jti;
-
-      const { status, error } = await this.redisService.setInCache(
-        makeBlacklistedKey(accessKeyId),
-        true,
-        MINUTES_10,
-      );
-
-      if (!status) {
-        console.error(error);
-      }
     }
 
     return { message: 'success' };
