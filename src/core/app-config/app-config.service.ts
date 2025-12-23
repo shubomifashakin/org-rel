@@ -23,6 +23,22 @@ export class AppConfigService {
       };
     }
   }
+  get Environment(): FnResult<string> {
+    try {
+      const data = this.configService.getOrThrow<string>('NODE_ENV');
+
+      return { status: true, data, error: null };
+    } catch (error) {
+      if (error instanceof Error) {
+        return { status: false, data: null, error: error.message };
+      }
+      return {
+        status: false,
+        data: null,
+        error: `Failed to get env variable NODE_ENV`,
+      };
+    }
+  }
 
   get JWTSecretName(): FnResult<string> {
     try {
