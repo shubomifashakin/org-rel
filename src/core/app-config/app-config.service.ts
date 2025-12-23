@@ -23,6 +23,24 @@ export class AppConfigService {
       };
     }
   }
+
+  get LogLevel(): FnResult<string> {
+    try {
+      const data = this.configService.getOrThrow<string>('LOG_LEVEL');
+
+      return { status: true, data, error: null };
+    } catch (error) {
+      if (error instanceof Error) {
+        return { status: false, data: null, error: error.message };
+      }
+      return {
+        status: false,
+        data: null,
+        error: `Failed to get env variable LOG_LEVEL`,
+      };
+    }
+  }
+
   get Environment(): FnResult<string> {
     try {
       const data = this.configService.getOrThrow<string>('NODE_ENV');
