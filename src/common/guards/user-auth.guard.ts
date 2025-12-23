@@ -5,9 +5,9 @@ import {
   UnauthorizedException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { type Request } from 'express';
 
-import env from '../../core/serverEnv/index.js';
 import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
 
 import { TOKEN } from '../utils/constants.js';
@@ -15,7 +15,10 @@ import { verifyJwt } from '../../common/utils/fns.js';
 
 @Injectable()
 export class UserAuthGuard implements CanActivate {
-  constructor(private readonly secretsManagerService: SecretsManagerService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly secretsManagerService: SecretsManagerService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -29,9 +32,12 @@ export class UserAuthGuard implements CanActivate {
     }
 
     try {
+      const jwtSecretName =
+        this.configService.getOrThrow<string>('JWT_SECRET_NAME');
+
       const secret = await this.secretsManagerService.getSecret<{
         JWT_SECRET: string;
-      }>(env.JWT_SECRET_NAME);
+      }>(jwtSecretName);
 
       if (!secret.status) {
         //FIXME: USE BETTER LOGGER IMPLMEMENTATION

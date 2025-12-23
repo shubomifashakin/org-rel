@@ -3,8 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
-import env from '../../../core/serverEnv/index.js';
 import { DatabaseService } from '../../../core/database/database.service.js';
 import { MailerService } from '../../../core/mailer/mailer.service.js';
 import { InviteUserDto } from './../dto/invite-user.dto.js';
@@ -15,6 +15,7 @@ export class OrganizationsInviteService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
   ) {}
 
   async inviteOneUser(
@@ -81,8 +82,10 @@ export class OrganizationsInviteService {
       },
     });
 
+    const mailerFrom = this.configService.getOrThrow<string>('MAILER_FROM');
+
     const { error } = await this.mailerService.emails.send({
-      from: env.MAILER_FROM,
+      from: mailerFrom,
       to: invitedUsersEmail,
       subject: `Invitation to join ${organizationInfo.name}`,
       html: generateInviteMail({

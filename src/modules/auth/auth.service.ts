@@ -9,6 +9,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { Users } from '../../../generated/prisma/client.js';
 
@@ -20,8 +21,6 @@ import {
   hashString,
   verifyJwt,
 } from '../../common/utils/fns.js';
-
-import env from '../../core/serverEnv/index.js';
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
@@ -48,15 +47,17 @@ export class AuthService {
     private readonly mailerService: MailerService,
     private readonly s3Service: S3Service,
     private readonly secretsManagerService: SecretsManagerService,
+    private readonly configService: ConfigService,
   ) {}
 
   private async generateJwts(
     accessClaims: JWTPayload,
     refreshClaims: JWTPayload & { tokenId: string },
   ) {
-    const secret = await this.secretsManagerService.getSecret<JWT_SECRET>(
-      env.JWT_SECRET_NAME,
-    );
+    const secretName = this.configService.getOrThrow<string>('JWT_SECRET_NAME');
+
+    const secret =
+      await this.secretsManagerService.getSecret<JWT_SECRET>(secretName);
 
     if (!secret.status) {
       console.error('Failed to get secret from secrets manager', secret.error);
@@ -150,8 +151,11 @@ export class AuthService {
       let s3Url: string | undefined;
 
       if (file) {
+        const bucketName =
+          this.configService.getOrThrow<string>('S3_BUCKET_NAME');
+
         const { status, data, error } = await this.s3Service.uploadToS3(
-          env.S3_BUCKET_NAME,
+          bucketName,
           file,
         );
 
@@ -258,11 +262,13 @@ export class AuthService {
           `TOO MAY LOGIN ATTEMPTS FOR ${existingUser.username} from ${ipAddr}`,
         );
 
+        const mailerFrom = this.configService.getOrThrow<string>('MAILER_FROM');
+
         const { error } = await this.mailerService.emails.send({
           to: existingUser.email,
           subject: 'Suspicious Login Attempt',
           html: generateSuspiciousLoginMail(ipAddr),
-          from: env.MAILER_FROM,
+          from: mailerFrom,
         });
 
         if (error) {
@@ -296,9 +302,11 @@ export class AuthService {
       return { message: 'success' };
     }
 
-    const secret = await this.secretsManagerService.getSecret<JWT_SECRET>(
-      env.JWT_SECRET_NAME,
-    );
+    const jwtSecretName =
+      this.configService.getOrThrow<string>('JWT_SECRET_NAME');
+
+    const secret =
+      await this.secretsManagerService.getSecret<JWT_SECRET>(jwtSecretName);
 
     if (!secret.status) {
       console.error('Failed to get secret from secrets manager', secret.error);
@@ -347,9 +355,11 @@ export class AuthService {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    const secret = await this.secretsManagerService.getSecret<JWT_SECRET>(
-      env.JWT_SECRET_NAME,
-    );
+    const jwtSecretName =
+      this.configService.getOrThrow<string>('JWT_SECRET_NAME');
+
+    const secret =
+      await this.secretsManagerService.getSecret<JWT_SECRET>(jwtSecretName);
 
     if (!secret.status) {
       console.error('Failed to get secret from secrets manager', secret.error);

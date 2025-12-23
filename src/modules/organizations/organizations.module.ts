@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
 import { OrganizationsController } from './organizations.controller.js';
 
@@ -20,6 +21,7 @@ import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager
     RedisModule,
     SecretsManagerModule,
     MailerModule,
+    ConfigModule,
   ],
   providers: [
     OrganizationsService,

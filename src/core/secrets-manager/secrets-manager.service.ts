@@ -3,14 +3,13 @@ import {
   InternalServerErrorException,
   OnModuleDestroy,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   GetSecretValueCommand,
   SecretsManagerClient,
 } from '@aws-sdk/client-secrets-manager';
 
 import { RedisService } from '../redis/redis.service.js';
-
-import env from '../serverEnv/index.js';
 
 import { MINUTES_10 } from '../../common/utils/constants.js';
 
@@ -23,18 +22,21 @@ export class SecretsManagerService
   extends SecretsManagerClient
   implements OnModuleDestroy
 {
-  private readonly redisService: RedisService;
+  constructor(
+    config: ConfigService,
+    private readonly redisService: RedisService,
+  ) {
+    const region = config.getOrThrow<string>('AWS_REGION');
+    const accessKeyId = config.getOrThrow<string>('AWS_ACCESS_KEY');
+    const secretAccessKey = config.getOrThrow<string>('AWS_SECRET_KEY');
 
-  constructor(redisService: RedisService) {
     super({
-      region: env.AWS_REGION,
+      region,
       credentials: {
-        accessKeyId: env.AWS_ACCESS_KEY,
-        secretAccessKey: env.AWS_SECRET_KEY,
+        accessKeyId,
+        secretAccessKey,
       },
     });
-
-    this.redisService = redisService;
   }
 
   onModuleDestroy() {

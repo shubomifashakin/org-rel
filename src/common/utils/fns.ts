@@ -1,8 +1,6 @@
 import * as argon2 from 'argon2';
 import * as jose from 'jose';
 
-import env from '../../core/serverEnv/index.js';
-
 type FnResult<T> =
   | { status: true; data: T; error: null }
   | { status: false; data: null; error: string };
@@ -52,6 +50,7 @@ export async function compareHashedString({
   }
 }
 
+//FIXME: MOVE TO SERVICE
 export async function generateJwt(
   jwtSecret: string,
   payload: jose.JWTPayload,
@@ -65,8 +64,8 @@ export async function generateJwt(
         alg: 'HS256',
       })
       .setIssuedAt()
-      .setIssuer(env.SERVICE_NAME)
-      .setAudience(env.CLIENT_DOMAIN)
+      .setIssuer('env.SERVICE_NAME')
+      .setAudience('env.CLIENT_DOMAIN')
       .setExpirationTime(exp)
       .sign(secret);
 
@@ -90,8 +89,8 @@ export async function verifyJwt(
       jwt,
       new TextEncoder().encode(secret),
       {
-        issuer: env.SERVICE_NAME,
-        audience: env.CLIENT_DOMAIN,
+        issuer: 'env.SERVICE_NAME',
+        audience: 'env.CLIENT_DOMAIN',
         ...options,
       },
     );

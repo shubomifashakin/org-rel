@@ -4,9 +4,9 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { v4 as uuid } from 'uuid';
 
-import env from '../../core/serverEnv/index.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { DatabaseService } from '../../core/database/database.service.js';
@@ -25,16 +25,15 @@ export class OrganizationsService {
     private readonly s3Service: S3Service,
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
   ) {}
 
   private async uploadToS3(image: Express.Multer.File) {
     const imageKey = uuid();
 
-    const result = await this.s3Service.uploadToS3(
-      env.S3_BUCKET_NAME,
-      image,
-      imageKey,
-    );
+    const bucketName = this.configService.getOrThrow<string>('S3_BUCKET_NAME');
+
+    const result = await this.s3Service.uploadToS3(bucketName, image, imageKey);
 
     return result;
   }

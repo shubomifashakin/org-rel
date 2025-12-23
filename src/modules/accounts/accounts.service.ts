@@ -8,12 +8,12 @@ import {
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
 
-import env from '../../core/serverEnv/index.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { UpdateAccountDto } from './dtos/update-account.dto.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { UpdateInviteDto } from './dtos/update-invite.dto.js';
+import { ConfigService } from '@nestjs/config';
 
 type UserInfo = {
   id: string;
@@ -30,6 +30,7 @@ export class AccountsService {
     private readonly databaseService: DatabaseService,
     private readonly s3Service: S3Service,
     private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getMyAccountInfo(userId: string): Promise<UserInfo> {
@@ -111,8 +112,11 @@ export class AccountsService {
       let s3Url: string | undefined = undefined;
 
       if (file) {
+        const bucketName =
+          this.configService.getOrThrow<string>('S3_BUCKET_NAME');
+
         const { status, data, error } = await this.s3Service.uploadToS3(
-          env.S3_BUCKET_NAME,
+          bucketName,
           file,
         );
 

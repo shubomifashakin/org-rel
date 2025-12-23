@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 
@@ -15,6 +17,7 @@ import { S3Module } from '../../core/s3/s3.module.js';
     MailerModule,
     RedisModule,
     S3Module,
+    ConfigModule,
   ],
   providers: [AuthService],
   controllers: [AuthController],

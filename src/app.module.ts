@@ -7,6 +7,7 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ConfigModule } from '@nestjs/config';
 
 import { DatabaseModule } from './core/database/database.module.js';
 import { S3Module } from './core/s3/s3.module.js';
@@ -28,6 +29,7 @@ import { LoggerModule } from './core/logger/logger.module.js';
     DatabaseModule,
     RedisModule,
     LoggerModule,
+    ConfigModule.forRoot(),
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [RedisService],

@@ -1,3 +1,4 @@
+import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 
 import { AccountsService } from './accounts.service.js';
@@ -11,6 +12,12 @@ import { RedisModule } from '../../core/redis/redis.module.js';
 @Module({
   providers: [AccountsService],
   controllers: [AccountsController],
-  imports: [DatabaseModule, SecretsManagerModule, S3Module, RedisModule],
+  imports: [
+    DatabaseModule,
+    SecretsManagerModule,
+    S3Module,
+    RedisModule,
+    ConfigModule,
+  ],
 })
 export class AccountsModule {}
