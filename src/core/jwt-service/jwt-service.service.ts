@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import * as jose from 'jose';
@@ -34,7 +34,7 @@ export class JwtServiceService {
           secret.error,
         );
 
-        throw new InternalServerErrorException('Internal Server Error');
+        throw new Error(secret.error);
       }
 
       const { JWT_SECRET } = secret.data;
