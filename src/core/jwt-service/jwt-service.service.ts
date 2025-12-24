@@ -63,7 +63,11 @@ export class JwtServiceService {
       return { status: true, data: jwt, error: null };
     } catch (error) {
       if (error instanceof Error) {
-        return { status: false, data: null, error: error.message };
+        return {
+          status: false,
+          data: null,
+          error: `${error.name}: ${error.message}`,
+        };
       }
 
       return { status: false, data: null, error: 'Failed to generate JWT' };
@@ -122,7 +126,11 @@ export class JwtServiceService {
       }
 
       if (error instanceof Error) {
-        return { status: false, data: null, error: error.message };
+        return {
+          status: false,
+          data: null,
+          error: `${error.name}: ${error.message}`,
+        };
       }
       return { status: false, data: null, error: 'Failed to verify JWT' };
     }

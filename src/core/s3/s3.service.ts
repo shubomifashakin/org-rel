@@ -69,7 +69,7 @@ export class S3Service extends S3Client implements OnModuleDestroy {
         return {
           status: false,
           data: null,
-          error: error.message,
+          error: `${error.name}: ${error.message}`,
         };
       }
 

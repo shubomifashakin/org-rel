@@ -96,7 +96,11 @@ export class SecretsManagerService
       return { status: true, data: jwtSecret as T, error: null };
     } catch (err) {
       if (err instanceof Error) {
-        return { status: false, data: null, error: err.message };
+        return {
+          status: false,
+          data: null,
+          error: `${err.name}: ${err.message}`,
+        };
       }
 
       return {

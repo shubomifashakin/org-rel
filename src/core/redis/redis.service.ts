@@ -130,7 +130,11 @@ export class RedisService
       return { status: true, data: null, error: null };
     } catch (error) {
       if (error instanceof Error) {
-        return { status: false, data: null, error: error.message };
+        return {
+          status: false,
+          data: null,
+          error: `${error.name}: ${error.message}`,
+        };
       }
 
       return {
@@ -152,13 +156,17 @@ export class RedisService
       };
     } catch (error) {
       if (error instanceof Error) {
-        return { status: false, data: null, error: error.message };
+        return {
+          status: false,
+          data: null,
+          error: `${error.name}: ${error.message}`,
+        };
       }
 
       return {
         status: false,
         data: null,
-        error: `Failed to set ${key} in cache`,
+        error: `Failed to get ${key} from cache`,
       };
     }
   }
@@ -170,7 +178,11 @@ export class RedisService
       return { status: true, data: null, error: null };
     } catch (error) {
       if (error instanceof Error) {
-        return { status: false, data: null, error: error.message };
+        return {
+          status: false,
+          data: null,
+          error: `${error.name}: ${error.message}`,
+        };
       }
 
       return {
