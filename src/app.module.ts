@@ -47,7 +47,7 @@ import { AppLoggerModule } from './core/app-logger/app-logger.module.js';
           );
         },
         setup(clx, req: Request) {
-          clx.set('ip', req.ip);
+          clx.set('ip', req?.ip || req.ips?.[0] || 'unknown');
           clx.set('userAgent', req.get('user-agent'));
         },
       },
