@@ -67,7 +67,7 @@ export class RedisService
 
       return obj;
     } catch (error) {
-      //dont let redis throttling issues block users from using the app
+      //dont let redis  issues block users from using the app
       this.loggerService.error(error);
       return {
         totalHits: 0,
