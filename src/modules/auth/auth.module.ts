@@ -9,6 +9,7 @@ import { RedisModule } from '../../core/redis/redis.module.js';
 import { S3Module } from '../../core/s3/s3.module.js';
 import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 import { AppConfigModule } from '../../core/app-config/app-config.module.js';
+import { AppLoggerModule } from '../../core/app-logger/app-logger.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AppConfigModule } from '../../core/app-config/app-config.module.js';
     S3Module,
     AppConfigModule,
     JwtServiceModule,
+    AppLoggerModule,
   ],
   providers: [AuthService],
   controllers: [AuthController],

@@ -1,9 +1,12 @@
+import { type Request } from 'express';
+import { REQUEST } from '@nestjs/core';
 import { ThrottlerException } from '@nestjs/throttler';
 import { JWTPayload } from 'jose';
 import { v4 as uuid } from 'uuid';
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -30,6 +33,7 @@ import { MailerService } from '../../core/mailer/mailer.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
 import { AppConfigService } from '../../core/app-config/app-config.service.js';
+import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
 
 import { DAYS_14_MS, MINUTES_10 } from '../../common/utils/constants.js';
 import { TOKEN } from '../../common/utils/constants.js';
@@ -43,6 +47,8 @@ export class AuthService {
     private readonly s3Service: S3Service,
     private readonly configService: AppConfigService,
     private readonly jwtService: JwtServiceService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   private async generateJwts(
@@ -68,11 +74,11 @@ export class AuthService {
     ]);
 
     if (!accessToken.status || !refreshToken.status) {
-      //FIXME: USE BETTER LOGGER IMPLEMENTATION
-      console.error(
-        'Failed to generate access or refresh token',
-        accessToken.error || refreshToken.error,
-      );
+      this.loggerService.logUnauthenticatedError({
+        req: this.request,
+        reason: accessToken?.error || refreshToken?.error,
+        message: 'Failed to generate access or refresh token',
+      });
 
       throw new InternalServerErrorException('Internal Server Error');
     }
@@ -104,7 +110,11 @@ export class AuthService {
     const { status, data, error } = await hashString(refreshToken);
 
     if (!status) {
-      console.log('failed to hash refresh token', error);
+      this.loggerService.logUnauthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to hash refresh token',
+      });
 
       throw new InternalServerErrorException('Internal Server Error');
     }
@@ -136,7 +146,12 @@ export class AuthService {
         const bucketName = this.configService.S3BucketName;
 
         if (!bucketName.status) {
-          console.error(bucketName.error);
+          this.loggerService.logUnauthenticatedError({
+            req: this.request,
+            reason: bucketName.error,
+            message: 'Failed to get S3 bucket name',
+          });
+
           throw new InternalServerErrorException('Internal Server Error');
         }
 
@@ -146,7 +161,13 @@ export class AuthService {
         );
 
         if (!status) {
-          console.error(error);
+          this.loggerService.logUnauthenticatedError({
+            req: this.request,
+            reason: error,
+            message: 'Failed to upload file',
+          });
+
+          throw new InternalServerErrorException('Internal Server Error');
         } else {
           s3Url = data;
         }
@@ -155,8 +176,11 @@ export class AuthService {
       const { status, data, error } = await hashString(signUpDto.password);
 
       if (!status) {
-        //FIXME: USE A BETTER LOGGER IMPLEMENTATION
-        console.error(error);
+        this.loggerService.logUnauthenticatedError({
+          req: this.request,
+          reason: error,
+          message: 'Failed to hash password',
+        });
 
         throw new InternalServerErrorException('Internal Server Error');
       }
@@ -195,7 +219,11 @@ export class AuthService {
     const attempts = await this.redisService.getFromCache<number>(attemptKey);
 
     if (!attempts.status) {
-      console.error(attempts.error);
+      this.loggerService.logUnauthenticatedError({
+        req: this.request,
+        reason: attempts.error,
+        message: 'Failed to get login attempts',
+      });
     }
 
     const currentAttempts = attempts?.data || 1;
@@ -228,7 +256,12 @@ export class AuthService {
     });
 
     if (!status) {
-      console.error('password fail reason', error);
+      this.loggerService.logUnauthenticatedError({
+        req: this.request,
+        reason: error,
+        message: 'Failed to compare hashed password',
+      });
+
       throw new InternalServerErrorException('Internal Server Error');
     }
 
@@ -240,7 +273,11 @@ export class AuthService {
       );
 
       if (!status) {
-        console.error(error);
+        this.loggerService.logUnauthenticatedError({
+          req: this.request,
+          reason: error,
+          message: 'Failed to set login attempts',
+        });
       }
 
       if (totalAttempts >= 5) {
@@ -251,7 +288,11 @@ export class AuthService {
         const mailerFrom = this.configService.MailerFrom;
 
         if (!mailerFrom.status) {
-          console.error(mailerFrom.error);
+          this.loggerService.logUnauthenticatedError({
+            req: this.request,
+            reason: mailerFrom.error,
+            message: 'Failed to get mailerFrom',
+          });
         }
 
         if (mailerFrom.status) {
@@ -263,10 +304,11 @@ export class AuthService {
           });
 
           if (error) {
-            console.error(
-              `Failed to send suspicious login mail to user:${existingUser.id}`,
-              error.message,
-            );
+            this.loggerService.logUnauthenticatedError({
+              req: this.request,
+              reason: error,
+              message: 'Failed to send suspicious login mail',
+            });
           }
         }
       }
@@ -283,7 +325,11 @@ export class AuthService {
     const deleteFromCache = await this.redisService.deleteFromCache(attemptKey);
 
     if (!deleteFromCache.status) {
-      console.error(deleteFromCache.error);
+      this.loggerService.logUnauthenticatedError({
+        req: this.request,
+        reason: deleteFromCache.error,
+        message: 'Failed to delete login attempts from cache',
+      });
     }
 
     return { message: 'success', tokens };
@@ -293,7 +339,12 @@ export class AuthService {
     const accessKeyReq = await this.jwtService.verify(accessToken);
 
     if (!accessKeyReq.status) {
-      console.error(accessKeyReq.error);
+      this.loggerService.logUnauthenticatedError({
+        req: this.request,
+        reason: accessKeyReq.error,
+        message: 'Failed to verify access token',
+      });
+
       throw new InternalServerErrorException();
     }
 
@@ -308,15 +359,23 @@ export class AuthService {
       );
 
       if (!status) {
-        console.error(error);
+        this.loggerService.logUnauthenticatedError({
+          reason: error,
+          req: this.request,
+          message: 'Failed to blacklist access token',
+        });
       }
     }
 
     const { status, error, data } = await this.jwtService.verify(refreshToken);
 
     if (!status) {
-      //FIXME:
-      console.error('logout error', error);
+      this.loggerService.logUnauthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to verify refresh token',
+      });
+
       throw new InternalServerErrorException('Internal Server Error');
     }
 
@@ -355,8 +414,12 @@ export class AuthService {
       await this.jwtService.verify(oldRefreshToken);
 
     if (!status) {
-      //FIXME:
-      console.error('refresh error', error);
+      this.loggerService.logUnauthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to verify refresh token',
+      });
+
       throw new InternalServerErrorException('Internal Server Error');
     }
 
