@@ -90,7 +90,7 @@ export class OrganizationsProjectsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
-        this.loggerService.logAuthenticatedError({
+        this.loggerService.logError({
           reason: error,
           req: this.request,
           message: 'Failed to upload image to S3',
@@ -139,7 +139,7 @@ export class OrganizationsProjectsService {
     );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to store project in cache',
@@ -159,7 +159,7 @@ export class OrganizationsProjectsService {
       );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to get project from cache',
@@ -191,7 +191,7 @@ export class OrganizationsProjectsService {
     );
 
     if (!storeInCache.status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to store project in cache',
@@ -231,7 +231,7 @@ export class OrganizationsProjectsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
-        this.loggerService.logAuthenticatedError({
+        this.loggerService.logError({
           reason: error,
           req: this.request,
           message: 'Failed to upload image to S3',
@@ -268,7 +268,7 @@ export class OrganizationsProjectsService {
     );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to store project in cache',
@@ -302,7 +302,7 @@ export class OrganizationsProjectsService {
     );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to delete project from cache',

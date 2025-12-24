@@ -40,7 +40,7 @@ export class IsMemberGuard implements CanActivate {
     }
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message:
@@ -92,7 +92,7 @@ export class IsMemberGuard implements CanActivate {
       );
 
     if (!setInCacheStatus) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: setInCacheError,
         req: this.request,
         message:

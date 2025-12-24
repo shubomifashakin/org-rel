@@ -93,7 +93,7 @@ export class OrganizationsInviteService {
     const mailerFrom = this.configService.MailerFrom;
 
     if (!mailerFrom.status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: mailerFrom.error,
         req: this.request,
         message: 'Failed to get MailerFrom',
@@ -116,7 +116,7 @@ export class OrganizationsInviteService {
     });
 
     if (error) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to send invite mail',

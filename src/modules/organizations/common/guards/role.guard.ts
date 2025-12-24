@@ -71,7 +71,7 @@ export class RolesGuard implements CanActivate {
 
     //if getting the users role from cache failed, log it
     if (!cachedUserRole.status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: cachedUserRole.error,
         req: this.request,
         message: 'RoleGuard: Failed to get organization user info from cache',
@@ -120,7 +120,7 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'RoleGuard: Failed to store organization user info in cache',

@@ -74,7 +74,7 @@ export class AuthService {
     ]);
 
     if (!accessToken.status || !refreshToken.status) {
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         req: this.request,
         reason: accessToken?.error || refreshToken?.error,
         message: 'Failed to generate access or refresh token',
@@ -110,7 +110,7 @@ export class AuthService {
     const { status, data, error } = await hashString(refreshToken);
 
     if (!status) {
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to hash refresh token',
@@ -146,7 +146,7 @@ export class AuthService {
         const bucketName = this.configService.S3BucketName;
 
         if (!bucketName.status) {
-          this.loggerService.logUnauthenticatedError({
+          this.loggerService.logError({
             req: this.request,
             reason: bucketName.error,
             message: 'Failed to get S3 bucket name',
@@ -161,7 +161,7 @@ export class AuthService {
         );
 
         if (!status) {
-          this.loggerService.logUnauthenticatedError({
+          this.loggerService.logError({
             req: this.request,
             reason: error,
             message: 'Failed to upload file',
@@ -176,7 +176,7 @@ export class AuthService {
       const { status, data, error } = await hashString(signUpDto.password);
 
       if (!status) {
-        this.loggerService.logUnauthenticatedError({
+        this.loggerService.logError({
           req: this.request,
           reason: error,
           message: 'Failed to hash password',
@@ -219,7 +219,7 @@ export class AuthService {
     const attempts = await this.redisService.getFromCache<number>(attemptKey);
 
     if (!attempts.status) {
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         req: this.request,
         reason: attempts.error,
         message: 'Failed to get login attempts',
@@ -256,7 +256,7 @@ export class AuthService {
     });
 
     if (!status) {
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         req: this.request,
         reason: error,
         message: 'Failed to compare hashed password',
@@ -273,7 +273,7 @@ export class AuthService {
       );
 
       if (!status) {
-        this.loggerService.logUnauthenticatedError({
+        this.loggerService.logError({
           req: this.request,
           reason: error,
           message: 'Failed to set login attempts',
@@ -288,7 +288,7 @@ export class AuthService {
         const mailerFrom = this.configService.MailerFrom;
 
         if (!mailerFrom.status) {
-          this.loggerService.logUnauthenticatedError({
+          this.loggerService.logError({
             req: this.request,
             reason: mailerFrom.error,
             message: 'Failed to get mailerFrom',
@@ -304,7 +304,7 @@ export class AuthService {
           });
 
           if (error) {
-            this.loggerService.logUnauthenticatedError({
+            this.loggerService.logError({
               req: this.request,
               reason: error,
               message: 'Failed to send suspicious login mail',
@@ -325,7 +325,7 @@ export class AuthService {
     const deleteFromCache = await this.redisService.deleteFromCache(attemptKey);
 
     if (!deleteFromCache.status) {
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         req: this.request,
         reason: deleteFromCache.error,
         message: 'Failed to delete login attempts from cache',
@@ -339,7 +339,7 @@ export class AuthService {
     const accessKeyReq = await this.jwtService.verify(accessToken);
 
     if (!accessKeyReq.status) {
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         req: this.request,
         reason: accessKeyReq.error,
         message: 'Failed to verify access token',
@@ -359,7 +359,7 @@ export class AuthService {
       );
 
       if (!status) {
-        this.loggerService.logUnauthenticatedError({
+        this.loggerService.logError({
           reason: error,
           req: this.request,
           message: 'Failed to blacklist access token',
@@ -370,7 +370,7 @@ export class AuthService {
     const { status, error, data } = await this.jwtService.verify(refreshToken);
 
     if (!status) {
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to verify refresh token',
@@ -414,7 +414,7 @@ export class AuthService {
       await this.jwtService.verify(oldRefreshToken);
 
     if (!status) {
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to verify refresh token',

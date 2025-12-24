@@ -83,7 +83,7 @@ export class OrganizationsUserService {
       );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to get organization user from cache',
@@ -134,7 +134,7 @@ export class OrganizationsUserService {
     );
 
     if (!storeInCache.status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to store organization user in cache',
@@ -224,7 +224,7 @@ export class OrganizationsUserService {
       );
 
       if (!status) {
-        this.loggerService.logAuthenticatedError({
+        this.loggerService.logError({
           reason: error,
           req: this.request,
           message: 'Failed to store organization user in cache',
@@ -297,7 +297,7 @@ export class OrganizationsUserService {
     );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to delete organization user from cache',

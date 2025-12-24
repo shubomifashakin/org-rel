@@ -40,7 +40,7 @@ export class UserAuthGuard implements CanActivate {
       const { status, error, data } = await this.jwtService.verify(accessToken);
 
       if (!status) {
-        this.loggerService.logUnauthenticatedError({
+        this.loggerService.logError({
           reason: error,
           req: this.request,
           message: 'UserGuard: Failed to verify access token',
@@ -59,7 +59,7 @@ export class UserAuthGuard implements CanActivate {
       );
 
       if (!blacklisted.status) {
-        this.loggerService.logUnauthenticatedError({
+        this.loggerService.logError({
           req: this.request,
           reason: blacklisted.error,
           message: 'UserGuard: Failed to get blacklisted status',
@@ -77,7 +77,7 @@ export class UserAuthGuard implements CanActivate {
         throw error;
       }
 
-      this.loggerService.logUnauthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'UserGuard: Failed to verify access token',

@@ -93,7 +93,7 @@ export class AppLoggerService
     this.logger.verbose(message, optionalParams);
   }
 
-  logAuthenticatedError({
+  logError({
     req,
     message,
     reason,
@@ -105,24 +105,6 @@ export class AppLoggerService
     this.logger.error(message, {
       reason,
       userId: req?.user?.id || 'unknown',
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      path: req.route?.path || req.path,
-      requestId: req.headers?.['request-id'],
-      userAgent: req.get('user-agent'),
-    });
-  }
-
-  logUnauthenticatedError({
-    req,
-    message,
-    reason,
-  }: {
-    req: Request;
-    message: string;
-    reason: unknown;
-  }) {
-    this.logger.error(message, {
-      reason,
       ipAddr: req?.ip || req?.ips?.[0] || 'unknown',
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       path: req.route?.path || req.path,

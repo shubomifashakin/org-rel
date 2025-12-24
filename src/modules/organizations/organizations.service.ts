@@ -66,7 +66,7 @@ export class OrganizationsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
-        this.loggerService.logAuthenticatedError({
+        this.loggerService.logError({
           reason: error,
           req: this.request,
           message: 'Failed to upload image to S3',
@@ -103,7 +103,7 @@ export class OrganizationsService {
     );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to store organization info in cache',
@@ -174,7 +174,7 @@ export class OrganizationsService {
       );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to get organization info from cache',
@@ -207,7 +207,7 @@ export class OrganizationsService {
     );
 
     if (!storeInCache.status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: storeInCache.error,
         req: this.request,
         message: 'Failed to store organization info in cache',
@@ -228,7 +228,7 @@ export class OrganizationsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
-        this.loggerService.logAuthenticatedError({
+        this.loggerService.logError({
           reason: error,
           req: this.request,
           message: 'Failed to upload image to S3',
@@ -260,7 +260,7 @@ export class OrganizationsService {
     );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to store organization info in cache',
@@ -288,7 +288,7 @@ export class OrganizationsService {
     );
 
     if (!status) {
-      this.loggerService.logAuthenticatedError({
+      this.loggerService.logError({
         reason: error,
         req: this.request,
         message: 'Failed to delete organization info from cache',
