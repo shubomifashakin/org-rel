@@ -1,8 +1,11 @@
+import { type Request } from 'express';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { REQUEST } from '@nestjs/core';
+import { Inject } from '@nestjs/common';
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
@@ -10,6 +13,7 @@ import { CachedUser } from '../types/index.js';
 
 import { RedisService } from '../../../core/redis/redis.service.js';
 import { DatabaseService } from '../../../core/database/database.service.js';
+import { AppLoggerService } from '../../../core/app-logger/app-logger.service.js';
 
 import { makeUserCacheKey } from '../common/utils.js';
 import { MINUTES_10 } from '../../../common/utils/constants.js';
@@ -20,6 +24,8 @@ export class OrganizationsUserService {
   constructor(
     private readonly redisService: RedisService,
     private readonly databaseService: DatabaseService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async getOrgUsers(organizationId: string, next?: string) {
@@ -77,7 +83,11 @@ export class OrganizationsUserService {
       );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to get organization user from cache',
+      });
     }
 
     if (status && data) {
@@ -124,7 +134,11 @@ export class OrganizationsUserService {
     );
 
     if (!storeInCache.status) {
-      console.error(storeInCache.error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to store organization user in cache',
+      });
     }
 
     return cachedUser;
@@ -210,7 +224,11 @@ export class OrganizationsUserService {
       );
 
       if (!status) {
-        console.error(error);
+        this.loggerService.logAuthenticatedError({
+          reason: error,
+          req: this.request,
+          message: 'Failed to store organization user in cache',
+        });
       }
 
       return { message: 'Success' };
@@ -279,7 +297,11 @@ export class OrganizationsUserService {
     );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to delete organization user from cache',
+      });
     }
 
     return { message: 'Success' };

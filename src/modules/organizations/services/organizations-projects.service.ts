@@ -1,9 +1,12 @@
+import { type Request } from 'express';
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { REQUEST } from '@nestjs/core';
 import { v4 as uuid } from 'uuid';
 
 import { Projects } from '../../../../generated/prisma/client.js';
@@ -12,6 +15,7 @@ import { S3Service } from '../../../core/s3/s3.service.js';
 import { RedisService } from '../../../core/redis/redis.service.js';
 import { DatabaseService } from '../../../core/database/database.service.js';
 import { AppConfigService } from '../../../core/app-config/app-config.service.js';
+import { AppLoggerService } from '../../../core/app-logger/app-logger.service.js';
 
 import { makeProjectCacheKey } from '../common/utils.js';
 
@@ -30,6 +34,8 @@ export class OrganizationsProjectsService {
     private readonly redisService: RedisService,
     private readonly s3Service: S3Service,
     private readonly configService: AppConfigService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   private async uploadToS3(image: Express.Multer.File) {
@@ -38,9 +44,7 @@ export class OrganizationsProjectsService {
     const { status, error, data } = this.configService.S3BucketName;
 
     if (!status) {
-      console.error(error);
-
-      throw new InternalServerErrorException('Internal Server Error');
+      return { status, error, data };
     }
 
     const result = await this.s3Service.uploadToS3(data, image, imageKey);
@@ -86,7 +90,11 @@ export class OrganizationsProjectsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
-        console.error(error);
+        this.loggerService.logAuthenticatedError({
+          reason: error,
+          req: this.request,
+          message: 'Failed to upload image to S3',
+        });
       }
 
       if (status) {
@@ -131,7 +139,11 @@ export class OrganizationsProjectsService {
     );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to store project in cache',
+      });
     }
 
     return { id: project.id };
@@ -147,7 +159,11 @@ export class OrganizationsProjectsService {
       );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to get project from cache',
+      });
     }
 
     if (status && data) {
@@ -175,7 +191,11 @@ export class OrganizationsProjectsService {
     );
 
     if (!storeInCache.status) {
-      console.error(storeInCache.error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to store project in cache',
+      });
     }
 
     return project;
@@ -211,7 +231,12 @@ export class OrganizationsProjectsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
-        console.error(error);
+        this.loggerService.logAuthenticatedError({
+          reason: error,
+          req: this.request,
+          message: 'Failed to upload image to S3',
+        });
+
         throw new InternalServerErrorException('Internal Server Error');
       }
 
@@ -243,7 +268,11 @@ export class OrganizationsProjectsService {
     );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to store project in cache',
+      });
     }
 
     return { message: 'success' };
@@ -273,7 +302,11 @@ export class OrganizationsProjectsService {
     );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to delete project from cache',
+      });
     }
 
     return { message: 'success' };

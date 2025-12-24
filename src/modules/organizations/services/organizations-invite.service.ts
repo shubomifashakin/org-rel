@@ -1,5 +1,8 @@
+import { type Request } from 'express';
+import { REQUEST } from '@nestjs/core';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -7,6 +10,8 @@ import {
 
 import { DatabaseService } from '../../../core/database/database.service.js';
 import { MailerService } from '../../../core/mailer/mailer.service.js';
+import { AppLoggerService } from '../../../core/app-logger/app-logger.service.js';
+
 import { InviteUserDto } from './../dto/invite-user.dto.js';
 import { generateInviteMail } from '../common/utils.js';
 import { AppConfigService } from '../../../core/app-config/app-config.service.js';
@@ -17,6 +22,8 @@ export class OrganizationsInviteService {
     private readonly databaseService: DatabaseService,
     private readonly mailerService: MailerService,
     private readonly configService: AppConfigService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async inviteOneUser(
@@ -86,7 +93,11 @@ export class OrganizationsInviteService {
     const mailerFrom = this.configService.MailerFrom;
 
     if (!mailerFrom.status) {
-      console.error(mailerFrom.error);
+      this.loggerService.logAuthenticatedError({
+        reason: mailerFrom.error,
+        req: this.request,
+        message: 'Failed to get MailerFrom',
+      });
 
       throw new InternalServerErrorException('Internal Server Error');
     }
@@ -105,10 +116,11 @@ export class OrganizationsInviteService {
     });
 
     if (error) {
-      console.error(
-        `Failed to send invite mail to user: ${invitedUsersEmail}`,
-        error.message,
-      );
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to send invite mail',
+      });
     }
 
     return { message: 'success' };
