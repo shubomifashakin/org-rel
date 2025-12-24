@@ -88,9 +88,12 @@
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
-    "preset": "ts-jest/presets/default-esm",
+    "preset": "ts-jest",
     "extensionsToTreatAsEsm": [
       ".ts"
+    ],
+    "setupFiles": [
+      "<rootDir>/jest.setup.ts"
     ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
@@ -101,7 +104,8 @@
       "^.+\\.mjs$": "babel-jest"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!(uuid|@noble|better-auth|jose)/)"
+      "node_modules/(?!(uuid|@noble|better-auth|jose)/)",
+      "generated/prisma"
     ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
