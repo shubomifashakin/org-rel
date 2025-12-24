@@ -30,7 +30,7 @@ export class AuthController {
   @GetImage()
   async signUp(
     @Body() signUpDto: SignUpDto,
-    @Res() response: Response,
+    @Res({ passthrough: true }) response: Response,
     @Ip() ipAddr: string,
     @UploadedFile() file?: Express.Multer.File,
     @UserAgent() userAgent?: string,
@@ -56,7 +56,7 @@ export class AuthController {
       maxAge: TOKEN.ACCESS.EXPIRATION_MS,
     });
 
-    return response.status(200).json({ message: 'success' });
+    return { message: 'success' };
   }
 
   @UseGuards(UserAuthGuard)
@@ -82,7 +82,7 @@ export class AuthController {
   @Post('sign-in')
   async signIn(
     @Body() body: SignInDto,
-    @Res() response: Response,
+    @Res({ passthrough: true }) response: Response,
     @Ip() ipAddr: string,
     @UserAgent() userAgent?: string,
   ) {
@@ -102,7 +102,7 @@ export class AuthController {
       maxAge: TOKEN.ACCESS.EXPIRATION_MS,
     });
 
-    return response.status(200).json({ message: 'success' });
+    return { message: 'success' };
   }
 
   @Throttle({ default: { limit: 5, ttl: 15 } })
