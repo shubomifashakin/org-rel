@@ -51,6 +51,7 @@ export class UserAuthGuard implements CanActivate {
         throw new UnauthorizedException('Unauthorized');
       }
 
+      this.cls.set('userId', data.sub);
       //if this fails, do we want to throw an error  & potentiall block legit users??
       const blacklisted = await this.redisService.getFromCache<boolean>(
         makeBlacklistedKey(data.jti),
@@ -68,7 +69,7 @@ export class UserAuthGuard implements CanActivate {
       }
 
       request.user = { id: data.sub!, email: data?.email as string };
-      this.cls.set('userId', data.sub);
+
       return true;
     } catch (error: unknown) {
       if (error instanceof UnauthorizedException) {
