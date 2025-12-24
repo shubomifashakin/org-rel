@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
 import { type Request } from 'express';
 
 import { RedisService } from '../../core/redis/redis.service.js';
@@ -17,6 +18,7 @@ import { makeBlacklistedKey } from '../utils/fns.js';
 @Injectable()
 export class UserAuthGuard implements CanActivate {
   constructor(
+    private readonly cls: ClsService,
     private readonly jwtService: JwtServiceService,
     private readonly redisService: RedisService,
     private readonly loggerService: AppLoggerService,
@@ -66,6 +68,7 @@ export class UserAuthGuard implements CanActivate {
       }
 
       request.user = { id: data.sub!, email: data?.email as string };
+      this.cls.set('userId', data.sub);
       return true;
     } catch (error: unknown) {
       if (error instanceof UnauthorizedException) {

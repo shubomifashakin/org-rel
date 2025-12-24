@@ -39,6 +39,7 @@
     "dotenv": "^17.2.3",
     "jose": "^6.1.3",
     "nest-winston": "^1.10.2",
+    "nestjs-cls": "^6.1.0",
     "redis": "^5.10.0",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.6.0",

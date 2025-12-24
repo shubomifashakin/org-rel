@@ -10,6 +10,7 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import { createLogger, format, Logger, transports } from 'winston';
 
 import { AppConfigService } from '../app-config/app-config.service.js';
+import { ClsService } from 'nestjs-cls';
 
 @Injectable()
 export class AppLoggerService
@@ -17,7 +18,10 @@ export class AppLoggerService
 {
   private logger: Logger;
 
-  constructor(private readonly configService: AppConfigService) {
+  constructor(
+    private readonly configService: AppConfigService,
+    private readonly cls: ClsService,
+  ) {
     if (!this.configService.LogLevel.data) {
       throw new Error('Failed to get env variable LOG_LEVEL');
     }
@@ -96,6 +100,16 @@ export class AppLoggerService
   logError({ message, reason }: { message: string; reason: unknown }) {
     this.logger.error(message, {
       reason,
+      requestId: this.cls.getId(),
+      ...this.cls.get(),
+    });
+  }
+
+  logWarning({ message, reason }: { message: string; reason: unknown }) {
+    this.logger.warn(message, {
+      reason,
+      requestId: this.cls.getId(),
+      ...this.cls.get(),
     });
   }
 

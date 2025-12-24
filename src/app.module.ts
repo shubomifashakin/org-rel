@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import { type Request } from 'express';
 import { APP_GUARD } from '@nestjs/core';
 import {
   MiddlewareConsumer,
@@ -6,6 +6,8 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { ClsModule } from 'nestjs-cls';
+import { v4 as uuid } from 'uuid';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { DatabaseModule } from './core/database/database.module.js';
@@ -32,6 +34,38 @@ import { AppLoggerModule } from './core/app-logger/app-logger.module.js';
     JwtServiceModule,
     AppConfigModule,
     AppLoggerModule,
+    ClsModule.forRoot({
+      global: true,
+      middleware: {
+        mount: true,
+        generateId: true,
+        idGenerator(req) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return (
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            req.headers['x-request-id'] || uuid()
+          );
+        },
+        setup(clx, req: Request) {
+          clx.set('ip', req.ip);
+          clx.set('userAgent', req.get('user-agent'));
+        },
+      },
+      guard: {
+        mount: true,
+        setup(clx, ctx) {
+          if (ctx.getType() === 'http') {
+            const req = ctx.switchToHttp().getRequest<Request>();
+
+            clx.set('method', req.method);
+            clx.set(
+              'handler',
+              `${ctx.getClass().name}.${ctx.getHandler().name}`,
+            );
+          }
+        },
+      },
+    }),
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [RedisService],
