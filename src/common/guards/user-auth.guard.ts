@@ -1,11 +1,9 @@
-import { REQUEST } from '@nestjs/core';
 import {
   Injectable,
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
   InternalServerErrorException,
-  Inject,
 } from '@nestjs/common';
 import { type Request } from 'express';
 
@@ -22,7 +20,6 @@ export class UserAuthGuard implements CanActivate {
     private readonly jwtService: JwtServiceService,
     private readonly redisService: RedisService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -42,7 +39,6 @@ export class UserAuthGuard implements CanActivate {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          req: this.request,
           message: 'UserGuard: Failed to verify access token',
         });
 
@@ -60,7 +56,6 @@ export class UserAuthGuard implements CanActivate {
 
       if (!blacklisted.status) {
         this.loggerService.logError({
-          req: this.request,
           reason: blacklisted.error,
           message: 'UserGuard: Failed to get blacklisted status',
         });
@@ -79,7 +74,6 @@ export class UserAuthGuard implements CanActivate {
 
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'UserGuard: Failed to verify access token',
       });
 

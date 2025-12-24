@@ -1,11 +1,5 @@
 import { type Request } from 'express';
-import { REQUEST } from '@nestjs/core';
-import {
-  CanActivate,
-  ExecutionContext,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 
 import { MINUTES_10 } from '../../../../common/utils/constants.js';
 import { RedisService } from '../../../../core/redis/redis.service.js';
@@ -21,7 +15,6 @@ export class IsMemberGuard implements CanActivate {
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -42,7 +35,6 @@ export class IsMemberGuard implements CanActivate {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message:
           'IsMemberGuard: Failed to get organization user info from cache',
       });
@@ -94,7 +86,6 @@ export class IsMemberGuard implements CanActivate {
     if (!setInCacheStatus) {
       this.loggerService.logError({
         reason: setInCacheError,
-        req: this.request,
         message:
           'IsMemberGuard: Failed to store organization user info in cache',
       });

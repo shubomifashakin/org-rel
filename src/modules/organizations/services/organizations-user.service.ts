@@ -1,12 +1,8 @@
-import { type Request } from 'express';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
-import { Inject } from '@nestjs/common';
-
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
 import { CachedUser } from '../types/index.js';
@@ -25,7 +21,6 @@ export class OrganizationsUserService {
     private readonly redisService: RedisService,
     private readonly databaseService: DatabaseService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async getOrgUsers(organizationId: string, next?: string) {
@@ -85,7 +80,6 @@ export class OrganizationsUserService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to get organization user from cache',
       });
     }
@@ -136,7 +130,6 @@ export class OrganizationsUserService {
     if (!storeInCache.status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to store organization user in cache',
       });
     }
@@ -226,7 +219,6 @@ export class OrganizationsUserService {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          req: this.request,
           message: 'Failed to store organization user in cache',
         });
       }
@@ -299,7 +291,6 @@ export class OrganizationsUserService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to delete organization user from cache',
       });
     }

@@ -1,8 +1,5 @@
-import { type Request } from 'express';
-import { REQUEST } from '@nestjs/core';
 import {
   BadRequestException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -23,7 +20,6 @@ export class OrganizationsInviteService {
     private readonly mailerService: MailerService,
     private readonly configService: AppConfigService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async inviteOneUser(
@@ -95,7 +91,6 @@ export class OrganizationsInviteService {
     if (!mailerFrom.status) {
       this.loggerService.logError({
         reason: mailerFrom.error,
-        req: this.request,
         message: 'Failed to get MailerFrom',
       });
 
@@ -118,7 +113,6 @@ export class OrganizationsInviteService {
     if (error) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to send invite mail',
       });
     }

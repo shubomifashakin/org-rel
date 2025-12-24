@@ -1,14 +1,11 @@
-import { REQUEST } from '@nestjs/core';
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 
-import { type Request } from 'express';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
 
 import { S3Service } from '../../core/s3/s3.service.js';
@@ -37,7 +34,6 @@ export class AccountsService {
     private readonly redisService: RedisService,
     private readonly configService: AppConfigService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async getMyAccountInfo(userId: string): Promise<UserInfo> {
@@ -51,7 +47,6 @@ export class AccountsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to get account info from cache',
       });
     }
@@ -81,7 +76,6 @@ export class AccountsService {
 
     if (!storeInCache.status) {
       this.loggerService.logError({
-        req: this.request,
         reason: storeInCache.error,
         message: 'Failed to store account info in cache',
       });
@@ -114,7 +108,6 @@ export class AccountsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to delete account info from cache',
       });
     }
@@ -135,7 +128,6 @@ export class AccountsService {
 
         if (!bucketName.status) {
           this.loggerService.logError({
-            req: this.request,
             reason: bucketName.error,
             message: 'Failed to get s3 bucket name',
           });
@@ -151,7 +143,7 @@ export class AccountsService {
         if (!status) {
           this.loggerService.logError({
             reason: error,
-            req: this.request,
+
             message: 'Failed to upload updated image to s3',
           });
 
@@ -189,7 +181,6 @@ export class AccountsService {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          req: this.request,
           message: 'Failed to store account info in cache',
         });
       }
@@ -198,7 +189,6 @@ export class AccountsService {
     } catch (error) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to update account info',
       });
 

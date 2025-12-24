@@ -1,7 +1,4 @@
-import { REQUEST } from '@nestjs/core';
-import { type Request } from 'express';
 import {
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -32,7 +29,6 @@ export class OrganizationsService {
     private readonly redisService: RedisService,
     private readonly configService: AppConfigService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   private async uploadToS3(
@@ -68,7 +64,6 @@ export class OrganizationsService {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          req: this.request,
           message: 'Failed to upload image to S3',
         });
       }
@@ -105,7 +100,6 @@ export class OrganizationsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to store organization info in cache',
       });
     }
@@ -176,7 +170,6 @@ export class OrganizationsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to get organization info from cache',
       });
     }
@@ -209,7 +202,6 @@ export class OrganizationsService {
     if (!storeInCache.status) {
       this.loggerService.logError({
         reason: storeInCache.error,
-        req: this.request,
         message: 'Failed to store organization info in cache',
       });
     }
@@ -230,7 +222,6 @@ export class OrganizationsService {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          req: this.request,
           message: 'Failed to upload image to S3',
         });
 
@@ -262,7 +253,6 @@ export class OrganizationsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to store organization info in cache',
       });
     }
@@ -290,7 +280,6 @@ export class OrganizationsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to delete organization info from cache',
       });
     }

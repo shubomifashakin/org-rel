@@ -1,12 +1,9 @@
-import { type Request } from 'express';
 import {
   ForbiddenException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
 import { v4 as uuid } from 'uuid';
 
 import { Projects } from '../../../../generated/prisma/client.js';
@@ -35,7 +32,6 @@ export class OrganizationsProjectsService {
     private readonly s3Service: S3Service,
     private readonly configService: AppConfigService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   private async uploadToS3(image: Express.Multer.File) {
@@ -92,7 +88,6 @@ export class OrganizationsProjectsService {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          req: this.request,
           message: 'Failed to upload image to S3',
         });
       }
@@ -141,7 +136,6 @@ export class OrganizationsProjectsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to store project in cache',
       });
     }
@@ -161,7 +155,6 @@ export class OrganizationsProjectsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to get project from cache',
       });
     }
@@ -193,7 +186,6 @@ export class OrganizationsProjectsService {
     if (!storeInCache.status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to store project in cache',
       });
     }
@@ -233,7 +225,6 @@ export class OrganizationsProjectsService {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          req: this.request,
           message: 'Failed to upload image to S3',
         });
 
@@ -270,7 +261,6 @@ export class OrganizationsProjectsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to store project in cache',
       });
     }
@@ -304,7 +294,6 @@ export class OrganizationsProjectsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to delete project from cache',
       });
     }

@@ -1,12 +1,9 @@
-import { type Request } from 'express';
-import { REQUEST } from '@nestjs/core';
 import { ThrottlerException } from '@nestjs/throttler';
 import { JWTPayload } from 'jose';
 import { v4 as uuid } from 'uuid';
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -48,7 +45,6 @@ export class AuthService {
     private readonly configService: AppConfigService,
     private readonly jwtService: JwtServiceService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   private async generateJwts(
@@ -75,7 +71,6 @@ export class AuthService {
 
     if (!accessToken.status || !refreshToken.status) {
       this.loggerService.logError({
-        req: this.request,
         reason: accessToken?.error || refreshToken?.error,
         message: 'Failed to generate access or refresh token',
       });
@@ -112,7 +107,6 @@ export class AuthService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to hash refresh token',
       });
 
@@ -147,7 +141,6 @@ export class AuthService {
 
         if (!bucketName.status) {
           this.loggerService.logError({
-            req: this.request,
             reason: bucketName.error,
             message: 'Failed to get S3 bucket name',
           });
@@ -162,7 +155,6 @@ export class AuthService {
 
         if (!status) {
           this.loggerService.logError({
-            req: this.request,
             reason: error,
             message: 'Failed to upload file',
           });
@@ -177,7 +169,6 @@ export class AuthService {
 
       if (!status) {
         this.loggerService.logError({
-          req: this.request,
           reason: error,
           message: 'Failed to hash password',
         });
@@ -220,7 +211,6 @@ export class AuthService {
 
     if (!attempts.status) {
       this.loggerService.logError({
-        req: this.request,
         reason: attempts.error,
         message: 'Failed to get login attempts',
       });
@@ -257,7 +247,6 @@ export class AuthService {
 
     if (!status) {
       this.loggerService.logError({
-        req: this.request,
         reason: error,
         message: 'Failed to compare hashed password',
       });
@@ -274,7 +263,6 @@ export class AuthService {
 
       if (!status) {
         this.loggerService.logError({
-          req: this.request,
           reason: error,
           message: 'Failed to set login attempts',
         });
@@ -289,7 +277,6 @@ export class AuthService {
 
         if (!mailerFrom.status) {
           this.loggerService.logError({
-            req: this.request,
             reason: mailerFrom.error,
             message: 'Failed to get mailerFrom',
           });
@@ -305,7 +292,6 @@ export class AuthService {
 
           if (error) {
             this.loggerService.logError({
-              req: this.request,
               reason: error,
               message: 'Failed to send suspicious login mail',
             });
@@ -326,7 +312,6 @@ export class AuthService {
 
     if (!deleteFromCache.status) {
       this.loggerService.logError({
-        req: this.request,
         reason: deleteFromCache.error,
         message: 'Failed to delete login attempts from cache',
       });
@@ -340,7 +325,6 @@ export class AuthService {
 
     if (!accessKeyReq.status) {
       this.loggerService.logError({
-        req: this.request,
         reason: accessKeyReq.error,
         message: 'Failed to verify access token',
       });
@@ -361,7 +345,6 @@ export class AuthService {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          req: this.request,
           message: 'Failed to blacklist access token',
         });
       }
@@ -372,7 +355,6 @@ export class AuthService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to verify refresh token',
       });
 
@@ -416,7 +398,6 @@ export class AuthService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'Failed to verify refresh token',
       });
 

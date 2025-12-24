@@ -1,11 +1,10 @@
-import { Reflector, REQUEST } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
 import { type Request } from 'express';
 import {
   BadRequestException,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Inject,
   Injectable,
 } from '@nestjs/common';
 
@@ -27,7 +26,6 @@ export class RolesGuard implements CanActivate {
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
     private readonly loggerService: AppLoggerService,
-    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -73,7 +71,6 @@ export class RolesGuard implements CanActivate {
     if (!cachedUserRole.status) {
       this.loggerService.logError({
         reason: cachedUserRole.error,
-        req: this.request,
         message: 'RoleGuard: Failed to get organization user info from cache',
       });
     }
@@ -122,7 +119,6 @@ export class RolesGuard implements CanActivate {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        req: this.request,
         message: 'RoleGuard: Failed to store organization user info in cache',
       });
     }
