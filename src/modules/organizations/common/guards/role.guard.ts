@@ -1,15 +1,18 @@
-import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
+import { Reflector, REQUEST } from '@nestjs/core';
+import { type Request } from 'express';
 import {
   BadRequestException,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 
-import { DatabaseService } from '../../../../core/database/database.service.js';
 import { RedisService } from '../../../../core/redis/redis.service.js';
+import { DatabaseService } from '../../../../core/database/database.service.js';
+import { AppLoggerService } from '../../../../core/app-logger/app-logger.service.js';
+
 import { MINUTES_10 } from '../../../../common/utils/constants.js';
 
 import { ROLES_KEY } from '../decorators/role.decorator.js';
@@ -23,6 +26,8 @@ export class RolesGuard implements CanActivate {
     private reflector: Reflector,
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -66,8 +71,11 @@ export class RolesGuard implements CanActivate {
 
     //if getting the users role from cache failed, log it
     if (!cachedUserRole.status) {
-      //FIXME: USE BETTER LOGGER
-      console.error(cachedUserRole.error);
+      this.loggerService.logAuthenticatedError({
+        reason: cachedUserRole.error,
+        req: this.request,
+        message: 'RoleGuard: Failed to get organization user info from cache',
+      });
     }
 
     const roleUserHas =
@@ -112,8 +120,11 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!status) {
-      //FIXME: USE BETTER LOGGER
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'RoleGuard: Failed to store organization user info in cache',
+      });
     }
 
     if (!requiredRolesForHandler.includes(roleUserHas.role)) {

@@ -1,9 +1,17 @@
-import { Request } from 'express';
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { type Request } from 'express';
+import { REQUEST } from '@nestjs/core';
+import {
+  CanActivate,
+  ExecutionContext,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 
 import { MINUTES_10 } from '../../../../common/utils/constants.js';
-import { DatabaseService } from '../../../../core/database/database.service.js';
 import { RedisService } from '../../../../core/redis/redis.service.js';
+import { DatabaseService } from '../../../../core/database/database.service.js';
+import { AppLoggerService } from '../../../../core/app-logger/app-logger.service.js';
+
 import { makeUserCacheKey } from '../utils.js';
 import { CachedUser } from '../../types/index.js';
 
@@ -12,6 +20,8 @@ export class IsMemberGuard implements CanActivate {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,8 +40,12 @@ export class IsMemberGuard implements CanActivate {
     }
 
     if (!status) {
-      //FIXME: USE A BETTER ERROR LOGGER
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message:
+          'IsMemberGuard: Failed to get organization user info from cache',
+      });
     }
 
     const isMember = await this.databaseService.organizationsOnUsers.findUnique(
@@ -78,8 +92,12 @@ export class IsMemberGuard implements CanActivate {
       );
 
     if (!setInCacheStatus) {
-      //FIXME: USE BETTER LOGGER
-      console.error(setInCacheError);
+      this.loggerService.logAuthenticatedError({
+        reason: setInCacheError,
+        req: this.request,
+        message:
+          'IsMemberGuard: Failed to store organization user info in cache',
+      });
     }
 
     return !!isMember;

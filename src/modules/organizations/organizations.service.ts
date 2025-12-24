@@ -1,4 +1,7 @@
+import { REQUEST } from '@nestjs/core';
+import { type Request } from 'express';
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -10,13 +13,14 @@ import { S3Service } from '../../core/s3/s3.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { AppConfigService } from '../../core/app-config/app-config.service.js';
+import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 
 import { makeOrganizationCacheKey } from './common/utils.js';
 import { Organizations } from '../../../generated/prisma/client.js';
-import { FnResult } from 'src/types/fnResult.js';
+import { FnResult } from '../../types/fnResult.js';
 
 type CachedOrg = Pick<Organizations, 'id' | 'name' | 'image' | 'createdAt'>;
 
@@ -27,6 +31,8 @@ export class OrganizationsService {
     private readonly databaseService: DatabaseService,
     private readonly redisService: RedisService,
     private readonly configService: AppConfigService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   private async uploadToS3(
@@ -37,7 +43,6 @@ export class OrganizationsService {
     const { status, data, error } = this.configService.S3BucketName;
 
     if (!status) {
-      console.warn(error);
       return { status: false, data: null, error };
     }
 
@@ -61,8 +66,11 @@ export class OrganizationsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
-        //FIXME: USE LOGGER IMPLEMENTATION
-        console.error(error);
+        this.loggerService.logAuthenticatedError({
+          reason: error,
+          req: this.request,
+          message: 'Failed to upload image to S3',
+        });
       }
 
       if (status) {
@@ -95,7 +103,11 @@ export class OrganizationsService {
     );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to store organization info in cache',
+      });
     }
 
     return { id: org.id };
@@ -162,7 +174,11 @@ export class OrganizationsService {
       );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to get organization info from cache',
+      });
     }
 
     if (status && data) {
@@ -191,7 +207,11 @@ export class OrganizationsService {
     );
 
     if (!storeInCache.status) {
-      console.error(storeInCache.error);
+      this.loggerService.logAuthenticatedError({
+        reason: storeInCache.error,
+        req: this.request,
+        message: 'Failed to store organization info in cache',
+      });
     }
 
     return cachedOrg;
@@ -208,7 +228,12 @@ export class OrganizationsService {
       const { status, error, data } = await this.uploadToS3(image);
 
       if (!status) {
-        console.error(error);
+        this.loggerService.logAuthenticatedError({
+          reason: error,
+          req: this.request,
+          message: 'Failed to upload image to S3',
+        });
+
         throw new InternalServerErrorException('Internal Server Error');
       }
 
@@ -235,7 +260,11 @@ export class OrganizationsService {
     );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to store organization info in cache',
+      });
     }
 
     return { message: 'success' };
@@ -259,7 +288,11 @@ export class OrganizationsService {
     );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to delete organization info from cache',
+      });
     }
 
     return { message: 'success' };
