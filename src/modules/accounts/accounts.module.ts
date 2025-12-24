@@ -9,6 +9,7 @@ import { S3Module } from '../../core/s3/s3.module.js';
 import { RedisModule } from '../../core/redis/redis.module.js';
 import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 import { AppConfigModule } from '../../core/app-config/app-config.module.js';
+import { AppLoggerModule } from '../../core/app-logger/app-logger.module.js';
 
 @Module({
   providers: [AccountsService],
@@ -20,6 +21,7 @@ import { AppConfigModule } from '../../core/app-config/app-config.module.js';
     RedisModule,
     AppConfigModule,
     JwtServiceModule,
+    AppLoggerModule,
   ],
 })
 export class AccountsModule {}

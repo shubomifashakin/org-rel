@@ -1,16 +1,20 @@
+import { REQUEST } from '@nestjs/core';
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 
+import { type Request } from 'express';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
 
 import { S3Service } from '../../core/s3/s3.service.js';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { AppConfigService } from '../../core/app-config/app-config.service.js';
+import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
 
 import { UpdateAccountDto } from './dtos/update-account.dto.js';
 import { RedisService } from '../../core/redis/redis.service.js';
@@ -32,6 +36,8 @@ export class AccountsService {
     private readonly s3Service: S3Service,
     private readonly redisService: RedisService,
     private readonly configService: AppConfigService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async getMyAccountInfo(userId: string): Promise<UserInfo> {
@@ -43,7 +49,11 @@ export class AccountsService {
     }
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to get account info from cache',
+      });
     }
 
     const userInfo = await this.databaseService.users.findUnique({
@@ -70,7 +80,11 @@ export class AccountsService {
     );
 
     if (!storeInCache.status) {
-      console.error(storeInCache.error);
+      this.loggerService.logAuthenticatedError({
+        req: this.request,
+        reason: storeInCache.error,
+        message: 'Failed to store account info in cache',
+      });
     }
 
     return userInfo;
@@ -98,7 +112,11 @@ export class AccountsService {
     );
 
     if (!status) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to delete account info from cache',
+      });
     }
 
     return { message: 'success' };
@@ -116,7 +134,11 @@ export class AccountsService {
         const bucketName = this.configService.S3BucketName;
 
         if (!bucketName.status) {
-          console.error(bucketName.error);
+          this.loggerService.logAuthenticatedError({
+            req: this.request,
+            reason: bucketName.error,
+            message: 'Failed to get s3 bucket name',
+          });
 
           throw new InternalServerErrorException('Internal Server Error');
         }
@@ -127,7 +149,12 @@ export class AccountsService {
         );
 
         if (!status) {
-          console.error('Failed to upload image to s3', error);
+          this.loggerService.logAuthenticatedError({
+            reason: error,
+            req: this.request,
+            message: 'Failed to upload updated image to s3',
+          });
+
           throw new InternalServerErrorException('Internal Server Error');
         }
 
@@ -160,12 +187,21 @@ export class AccountsService {
       );
 
       if (!status) {
-        console.error(error);
+        this.loggerService.logAuthenticatedError({
+          reason: error,
+          req: this.request,
+          message: 'Failed to store account info in cache',
+        });
       }
 
       return { message: 'success' };
     } catch (error) {
-      console.error(error);
+      this.loggerService.logAuthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'Failed to update account info',
+      });
+
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
           throw new NotFoundException('User does not exist');
