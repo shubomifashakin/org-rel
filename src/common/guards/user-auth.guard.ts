@@ -1,14 +1,18 @@
+import { REQUEST } from '@nestjs/core';
 import {
   Injectable,
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
 import { type Request } from 'express';
 
 import { RedisService } from '../../core/redis/redis.service.js';
+import { AppLoggerService } from '.././../core/app-logger/app-logger.service.js';
 import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
+
 import { TOKEN } from '../utils/constants.js';
 import { makeBlacklistedKey } from '../utils/fns.js';
 
@@ -17,6 +21,8 @@ export class UserAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtServiceService,
     private readonly redisService: RedisService,
+    private readonly loggerService: AppLoggerService,
+    @Inject(REQUEST) private readonly request: Request,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,8 +40,12 @@ export class UserAuthGuard implements CanActivate {
       const { status, error, data } = await this.jwtService.verify(accessToken);
 
       if (!status) {
-        //FIXME: USE BETTER LOGGER IMPLEMENTATION
-        console.error(error);
+        this.loggerService.logUnauthenticatedError({
+          reason: error,
+          req: this.request,
+          message: 'UserGuard: Failed to verify access token',
+        });
+
         throw new InternalServerErrorException('Unauthorized');
       }
 
@@ -49,7 +59,11 @@ export class UserAuthGuard implements CanActivate {
       );
 
       if (!blacklisted.status) {
-        console.error(blacklisted.error);
+        this.loggerService.logUnauthenticatedError({
+          req: this.request,
+          reason: blacklisted.error,
+          message: 'UserGuard: Failed to get blacklisted status',
+        });
       }
 
       if (blacklisted.data) {
@@ -62,8 +76,13 @@ export class UserAuthGuard implements CanActivate {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      //FIXME: USE BETTER LOGGER IMPLEMENTATION
-      console.error(error);
+
+      this.loggerService.logUnauthenticatedError({
+        reason: error,
+        req: this.request,
+        message: 'UserGuard: Failed to verify access token',
+      });
+
       throw new InternalServerErrorException('Internal Server Error');
     }
   }
