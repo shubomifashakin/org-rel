@@ -14,12 +14,18 @@ import { AppLoggerModule } from '../../core/app-logger/app-logger.module.js';
 import { DatabaseService } from '../../core/database/database.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { ClsModule } from 'nestjs-cls';
-import { SecretsManagerService } from '../../core/secrets-manager/secrets-manager.service.js';
+import { HasherModule } from '../../core/hasher/hasher.module.js';
 import {
+  BadRequestException,
   ConflictException,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
+import { HasherService } from '../../core/hasher/hasher.service.js';
+import { ThrottlerException } from '@nestjs/throttler';
+import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
+import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
 
 const mockResponse = {
   cookie: jest.fn(),
@@ -41,16 +47,33 @@ const myDatabaseServiceMock = {
   },
   refreshTokens: {
     create: jest.fn(),
+    delete: jest.fn(),
+    findUnique: jest.fn(),
   },
 };
 
 const myRedisServiceMock = {
   getFromCache: jest.fn(),
   setInCache: jest.fn(),
+  deleteFromCache: jest.fn(),
 };
 
 const mySecretsManagerServiceMock = {
   getSecret: jest.fn(),
+};
+
+const myHasherServiceMock = {
+  hashString: jest.fn(),
+  compareHashedString: jest.fn(),
+};
+
+const myJwtServiceMock = {
+  sign: jest.fn(),
+  verify: jest.fn(),
+};
+
+const myLoggerServiceMock = {
+  logError: jest.fn(),
 };
 
 describe('AuthController', () => {
@@ -65,6 +88,7 @@ describe('AuthController', () => {
         RedisModule,
         S3Module,
         AppConfigModule,
+        HasherModule,
         JwtServiceModule,
         ClsModule.forRoot({
           global: true,
@@ -81,13 +105,17 @@ describe('AuthController', () => {
         AppLoggerModule,
       ],
       providers: [AuthService],
-    })
+    }) //FIXME: IMPLEMENT BETTER OVERRIDES
       .overrideProvider(DatabaseService)
       .useValue(myDatabaseServiceMock)
       .overrideProvider(RedisService)
       .useValue(myRedisServiceMock)
-      .overrideProvider(SecretsManagerService)
-      .useValue(mySecretsManagerServiceMock)
+      .overrideProvider(HasherService)
+      .useValue(myHasherServiceMock)
+      .overrideProvider(JwtServiceService)
+      .useValue(myJwtServiceMock)
+      .overrideProvider(AppLoggerService)
+      .useValue(myLoggerServiceMock)
       .compile();
 
     controller = await module.resolve<AuthController>(AuthController);
@@ -105,9 +133,15 @@ describe('AuthController', () => {
 
       myDatabaseServiceMock.refreshTokens.create.mockResolvedValue(null);
 
-      mySecretsManagerServiceMock.getSecret.mockResolvedValue({
+      myHasherServiceMock.hashString.mockResolvedValue({
         status: true,
-        data: { JWT_SECRET: '123456' },
+        data: mockUser.password,
+        error: null,
+      });
+
+      myJwtServiceMock.sign.mockResolvedValue({
+        status: true,
+        data: 'mock-jwt',
         error: null,
       });
 
@@ -125,44 +159,62 @@ describe('AuthController', () => {
       ).toEqual({ message: 'success' });
 
       expect(myDatabaseServiceMock.refreshTokens.create).toHaveBeenCalled();
-      expect(mySecretsManagerServiceMock.getSecret).toHaveBeenCalled();
+      expect(myJwtServiceMock.sign).toHaveBeenCalled();
     });
 
-    // it('signIn - it should signIn the user', async () => {
-    //   myRedisServiceMock.getFromCache.mockResolvedValue({
-    //     status: true,
-    //     data: 0,
-    //     error: null,
-    //   });
+    it('signIn - it should signIn the user', async () => {
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: 0,
+        error: null,
+      });
 
-    //   myDatabaseServiceMock.users.findUnique.mockResolvedValue(mockUser);
+      myDatabaseServiceMock.users.findUnique.mockResolvedValue(mockUser);
 
-    //   myDatabaseServiceMock.refreshTokens.create.mockResolvedValue(null);
+      myDatabaseServiceMock.refreshTokens.create.mockResolvedValue(null);
 
-    //   mySecretsManagerServiceMock.getSecret.mockResolvedValue({
-    //     status: true,
-    //     data: { JWT_SECRET: '123456' },
-    //     error: null,
-    //   });
+      myRedisServiceMock.deleteFromCache.mockResolvedValue({ status: true });
 
-    //   expect(
-    //     await controller.signIn(
-    //       {
-    //         password: 'password',
-    //         username: '545plea',
-    //       },
-    //       mockResponse,
-    //       '127.0.0.1',
-    //     ),
-    //   ).toEqual({ message: 'success' });
+      myHasherServiceMock.compareHashedString.mockResolvedValue({
+        status: true,
+        data: true,
+        error: null,
+      });
 
-    //   expect(myDatabaseServiceMock.refreshTokens.create).toHaveBeenCalled();
-    //   expect(mySecretsManagerServiceMock.getSecret).toHaveBeenCalled();
-    // });
+      myHasherServiceMock.hashString.mockResolvedValue({
+        status: true,
+        data: 'mock-refresh-hashed',
+        error: null,
+      });
+
+      myJwtServiceMock.sign.mockResolvedValue({
+        status: true,
+        data: 'mock-jwt',
+        error: null,
+      });
+
+      expect(
+        await controller.signIn(
+          {
+            password: 'password',
+            username: '545plea',
+          },
+          mockResponse,
+          '127.0.0.1',
+        ),
+      ).toEqual({ message: 'success' });
+
+      expect(myDatabaseServiceMock.refreshTokens.create).toHaveBeenCalled();
+      expect(myJwtServiceMock.sign).toHaveBeenCalled();
+      expect(myHasherServiceMock.compareHashedString).toHaveBeenCalledWith({
+        hash: mockUser.password,
+        plainString: mockUser.password,
+      });
+    });
   });
 
-  describe('Unsuccessfull Requests', () => {
-    it('it should not create the user due to conflicting records', async () => {
+  describe('Unsuccessful Requests', () => {
+    it('sign Up - it should not create the user due to conflicting records', async () => {
       myDatabaseServiceMock.users.create
         .mockRejectedValueOnce(
           new PrismaClientKnownRequestError('Username is taken', {
@@ -173,6 +225,12 @@ describe('AuthController', () => {
         .mockResolvedValue(mockUser);
 
       myDatabaseServiceMock.refreshTokens.create.mockResolvedValue(null);
+
+      myHasherServiceMock.hashString.mockResolvedValue({
+        status: true,
+        data: mockUser.password,
+        error: null,
+      });
 
       mySecretsManagerServiceMock.getSecret.mockResolvedValueOnce({
         status: false,
@@ -194,12 +252,18 @@ describe('AuthController', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('it should fail because it failed to get secrets', async () => {
+    it('sign Up - it should fail to sign up because sever failed to generate jwt', async () => {
       myDatabaseServiceMock.users.create.mockResolvedValue(mockUser);
 
       myDatabaseServiceMock.refreshTokens.create.mockResolvedValue(null);
 
-      mySecretsManagerServiceMock.getSecret.mockResolvedValue({
+      myHasherServiceMock.hashString.mockResolvedValue({
+        status: true,
+        data: mockUser.password,
+        error: null,
+      });
+
+      myJwtServiceMock.sign.mockResolvedValue({
         status: false,
         data: null,
         error: 'Failed to get secret',
@@ -217,6 +281,115 @@ describe('AuthController', () => {
           '127.0.0.1',
         ),
       ).rejects.toThrow(InternalServerErrorException);
+
+      expect(myLoggerServiceMock.logError).toHaveBeenCalled();
+    });
+
+    it('signIn - it should not signIn the user because they are blocked', async () => {
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: 6,
+        error: null,
+      });
+
+      await expect(
+        controller.signIn(
+          {
+            password: 'password',
+            username: '545plea',
+          },
+          mockResponse,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(ThrottlerException);
+    });
+
+    it('signIn - it should not signIn the user because they do not exist', async () => {
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: 0,
+        error: null,
+      });
+
+      myDatabaseServiceMock.users.findUnique.mockResolvedValue(null);
+
+      await expect(
+        controller.signIn(
+          {
+            password: 'password',
+            username: '545plea',
+          },
+          mockResponse,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('signIn - it should not signIn the user because the password is wrong', async () => {
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: 0,
+        error: null,
+      });
+
+      myDatabaseServiceMock.users.findUnique.mockResolvedValue(mockUser);
+
+      myHasherServiceMock.compareHashedString.mockResolvedValue({
+        status: true,
+        data: false,
+        error: null,
+      });
+
+      myRedisServiceMock.setInCache.mockResolvedValue({
+        status: true,
+        error: null,
+      });
+
+      await expect(
+        controller.signIn(
+          {
+            password: 'password',
+            username: '545plea',
+          },
+          mockResponse,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('signIn - it should not signIn the user because server failed to generate jwt', async () => {
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: 0,
+        error: null,
+      });
+
+      myDatabaseServiceMock.users.findUnique.mockResolvedValue(mockUser);
+
+      myHasherServiceMock.compareHashedString.mockResolvedValue({
+        status: true,
+        data: true,
+        error: null,
+      });
+
+      myJwtServiceMock.sign.mockResolvedValue({
+        status: false,
+        data: 'mock-jwt',
+        error: 'Failed to get secret',
+      });
+
+      await expect(
+        controller.signIn(
+          {
+            password: 'password',
+            username: '545plea',
+          },
+          mockResponse,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(InternalServerErrorException);
+
+      expect(myLoggerServiceMock.logError).toHaveBeenCalled();
     });
   });
 });
