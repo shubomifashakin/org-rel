@@ -17,7 +17,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { HealthModule } from './modules/health/health.module.js';
 import { RedisModule } from './core/redis/redis.module.js';
 import { RedisService } from './core/redis/redis.service.js';
-import { logger } from './middlewares/logger.middleware.js';
+import { LoggerMiddleware } from './middlewares/logger.middleware.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { SecretsManagerModule } from './core/secrets-manager/secrets-manager.module.js';
 import { AccountsModule } from './modules/accounts/accounts.module.js';
@@ -118,7 +118,7 @@ import { HasherModule } from './core/hasher/hasher.module.js';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(logger)
+      .apply(LoggerMiddleware)
       .exclude({ path: 'health', method: RequestMethod.ALL })
       .forRoutes('*');
   }
