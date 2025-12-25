@@ -1,5 +1,5 @@
 import { IsEnum } from 'class-validator';
-import { Roles } from '../../../../generated/prisma/client.js';
+import { Roles } from '../../../../generated/prisma/enums.js';
 
 export class UpdateOrgUserDto {
   @IsEnum(Roles, { message: 'Invalid role' })
