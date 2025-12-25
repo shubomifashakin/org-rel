@@ -37,82 +37,118 @@ export class AccountsService {
   ) {}
 
   async getMyAccountInfo(userId: string): Promise<UserInfo> {
-    const { status, error, data } =
-      await this.redisService.getFromCache<UserInfo>(`user:${userId}`);
+    try {
+      const { status, error, data } =
+        await this.redisService.getFromCache<UserInfo>(`user:${userId}`);
 
-    if (status && data) {
-      return data;
-    }
+      if (status && data) {
+        return data;
+      }
 
-    if (!status) {
-      this.loggerService.logError({
-        reason: error,
-        message: 'Failed to get account info from cache',
+      if (!status) {
+        this.loggerService.logError({
+          reason: error,
+          message: 'Failed to get account info from cache',
+        });
+      }
+
+      const userInfo = await this.databaseService.users.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          email: true,
+          image: true,
+          fullname: true,
+          username: true,
+          createdAt: true,
+        },
       });
+
+      if (!userInfo) {
+        throw new NotFoundException('User does not exist');
+      }
+
+      const storeInCache = await this.redisService.setInCache(
+        `user:${userId}`,
+        userInfo,
+      );
+
+      if (!storeInCache.status) {
+        this.loggerService.logError({
+          reason: storeInCache.error,
+          message: 'Failed to store account info in cache',
+        });
+      }
+
+      return userInfo;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        this.loggerService.logError({
+          reason: error.message,
+          message: 'Failed to get account info',
+        });
+      } else {
+        this.loggerService.logError({
+          reason: error,
+          message: 'Failed to get account info',
+        });
+      }
+
+      throw new InternalServerErrorException('Internal Server Error');
     }
-
-    const userInfo = await this.databaseService.users.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        email: true,
-        image: true,
-        fullname: true,
-        username: true,
-        createdAt: true,
-      },
-    });
-
-    if (!userInfo) {
-      throw new NotFoundException('User does not exist');
-    }
-
-    const storeInCache = await this.redisService.setInCache(
-      `user:${userId}`,
-      userInfo,
-    );
-
-    if (!storeInCache.status) {
-      this.loggerService.logError({
-        reason: storeInCache.error,
-        message: 'Failed to store account info in cache',
-      });
-    }
-
-    return userInfo;
   }
 
   async deleteMyAccount(userId: string) {
-    const userExists = await this.databaseService.users.findUnique({
-      where: {
-        id: userId,
-      },
-    });
-
-    if (!userExists) {
-      return { message: 'success' };
-    }
-
-    await this.databaseService.users.delete({
-      where: {
-        id: userId,
-      },
-    });
-
-    const { status, error } = await this.redisService.deleteFromCache(
-      `user:${userId}`,
-    );
-
-    if (!status) {
-      this.loggerService.logError({
-        reason: error,
-        message: 'Failed to delete account info from cache',
+    try {
+      const userExists = await this.databaseService.users.findUnique({
+        where: {
+          id: userId,
+        },
       });
-    }
 
-    return { message: 'success' };
+      if (!userExists) {
+        return { message: 'success' };
+      }
+
+      await this.databaseService.users.delete({
+        where: {
+          id: userId,
+        },
+      });
+
+      const { status, error } = await this.redisService.deleteFromCache(
+        `user:${userId}`,
+      );
+
+      if (!status) {
+        this.loggerService.logError({
+          reason: error,
+          message: 'Failed to delete account info from cache',
+        });
+      }
+
+      return { message: 'success' };
+    } catch (error) {
+      if (error instanceof Error) {
+        this.loggerService.logError({
+          reason: `${error.name}: ${error.message}`,
+          message: 'Failed to get all invites',
+        });
+      } else {
+        this.loggerService.logError({
+          reason: error,
+          message: 'Failed to get all invites',
+        });
+      }
+
+      throw new InternalServerErrorException('Internal Server Error');
+    }
   }
 
   async updateMyAccount(
@@ -214,42 +250,58 @@ export class AccountsService {
   }
 
   async getAllInvites(email: string) {
-    const invitesReceived = await this.databaseService.invites.findMany({
-      where: {
-        email,
-      },
-      select: {
-        id: true,
-        createdAt: true,
-        expiresAt: true,
-        role: true,
-        status: true,
-        organization: {
-          select: {
-            name: true,
+    try {
+      const invitesReceived = await this.databaseService.invites.findMany({
+        where: {
+          email,
+        },
+        select: {
+          id: true,
+          createdAt: true,
+          expiresAt: true,
+          role: true,
+          status: true,
+          organization: {
+            select: {
+              name: true,
+            },
+          },
+          inviter: {
+            select: {
+              fullname: true,
+            },
           },
         },
-        inviter: {
-          select: {
-            fullname: true,
-          },
-        },
-      },
-    });
+      });
 
-    const transformed = invitesReceived.map((invite) => {
-      return {
-        id: invite.id,
-        role: invite.role,
-        status: invite.status,
-        expiresAt: invite.expiresAt,
-        createdAt: invite.createdAt,
-        inviter: invite.inviter?.fullname,
-        organization: invite.organization.name,
-      };
-    });
+      const transformed = invitesReceived.map((invite) => {
+        return {
+          id: invite.id,
+          role: invite.role,
+          status: invite.status,
+          expiresAt: invite.expiresAt,
+          createdAt: invite.createdAt,
+          inviter: invite.inviter?.fullname,
+          organization: invite.organization.name,
+        };
+      });
 
-    return { invites: transformed };
+      return { invites: transformed };
+    } catch (error) {
+      if (error instanceof Error) {
+        this.loggerService.logError({
+          reason: `${error.name}: ${error.message}`,
+          message: 'Failed to get all invites',
+        });
+      } else {
+        this.loggerService.logError({
+          reason: error,
+          message: 'Failed to get all invites',
+        });
+      }
+
+      throw new InternalServerErrorException('Internal Server Error');
+    }
   }
 
   async updateInviteStatus(
