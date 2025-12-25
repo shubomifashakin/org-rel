@@ -25,6 +25,7 @@ import { MailerModule } from './core/mailer/mailer.module.js';
 import { JwtServiceModule } from './core/jwt-service/jwt-service.module.js';
 import { AppConfigModule } from './core/app-config/app-config.module.js';
 import { AppLoggerModule } from './core/app-logger/app-logger.module.js';
+import { HasherModule } from './core/hasher/hasher.module.js';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AppLoggerModule } from './core/app-logger/app-logger.module.js';
     JwtServiceModule,
     AppConfigModule,
     AppLoggerModule,
+    HasherModule,
     ClsModule.forRoot({
       global: true,
       middleware: {

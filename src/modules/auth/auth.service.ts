@@ -14,9 +14,7 @@ import { Users } from '../../../generated/prisma/client.js';
 
 import { SignUpDto } from './common/dtos/sign-up.dto.js';
 import {
-  compareHashedString,
   generateSuspiciousLoginMail,
-  hashString,
   makeBlacklistedKey,
 } from '../../common/utils/fns.js';
 
@@ -28,6 +26,7 @@ import { DatabaseService } from '../../core/database/database.service.js';
 import { RedisService } from '../../core/redis/redis.service.js';
 import { MailerService } from '../../core/mailer/mailer.service.js';
 import { S3Service } from '../../core/s3/s3.service.js';
+import { HasherService } from '../../core/hasher/hasher.service.js';
 import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
 import { AppConfigService } from '../../core/app-config/app-config.service.js';
 import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
@@ -45,6 +44,7 @@ export class AuthService {
     private readonly configService: AppConfigService,
     private readonly jwtService: JwtServiceService,
     private readonly loggerService: AppLoggerService,
+    private readonly hasherService: HasherService,
   ) {}
 
   private async generateJwts(
@@ -102,7 +102,8 @@ export class AuthService {
       },
     );
 
-    const { status, data, error } = await hashString(refreshToken);
+    const { status, data, error } =
+      await this.hasherService.hashString(refreshToken);
 
     if (!status) {
       this.loggerService.logError({
@@ -165,7 +166,9 @@ export class AuthService {
         }
       }
 
-      const { status, data, error } = await hashString(signUpDto.password);
+      const { status, data, error } = await this.hasherService.hashString(
+        signUpDto.password,
+      );
 
       if (!status) {
         this.loggerService.logError({
@@ -240,10 +243,11 @@ export class AuthService {
       throw new NotFoundException('User does not exist');
     }
 
-    const { status, error, data } = await compareHashedString({
-      plainString: body.password,
-      hash: existingUser.password,
-    });
+    const { status, error, data } =
+      await this.hasherService.compareHashedString({
+        plainString: body.password,
+        hash: existingUser.password,
+      });
 
     if (!status) {
       this.loggerService.logError({
