@@ -1,4 +1,5 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
+import { ThrottlerException } from '@nestjs/throttler';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AuthService } from './auth.service.js';
@@ -21,9 +22,11 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client.js';
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientUnknownRequestError,
+} from '@prisma/client/runtime/client.js';
 import { HasherService } from '../../core/hasher/hasher.service.js';
-import { ThrottlerException } from '@nestjs/throttler';
 import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
 import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
 
@@ -31,6 +34,7 @@ const mockResponse = {
   cookie: jest.fn(),
   status: jest.fn(),
   json: jest.fn(),
+  clearCookie: jest.fn(),
 } as unknown as Response;
 
 const mockUser = {
@@ -211,6 +215,44 @@ describe('AuthController', () => {
         plainString: mockUser.password,
       });
     });
+
+    it('signOut - it should signOut the user', async () => {
+      myDatabaseServiceMock.refreshTokens.findUnique.mockResolvedValue(null);
+
+      myJwtServiceMock.verify.mockResolvedValue({
+        status: true,
+        data: { jti: 'mock-jti' },
+        error: null,
+      });
+
+      myRedisServiceMock.setInCache.mockResolvedValue({
+        status: true,
+        error: null,
+      });
+
+      myDatabaseServiceMock.refreshTokens.findUnique.mockResolvedValue({
+        id: 'refresh-id',
+      });
+
+      myDatabaseServiceMock.refreshTokens.delete.mockResolvedValue(null);
+
+      expect(
+        await controller.signOut(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              access_token: 'fake-token',
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+        ),
+      ).toEqual({ message: 'success' });
+
+      expect(myDatabaseServiceMock.refreshTokens.findUnique).toHaveBeenCalled();
+      expect(myJwtServiceMock.verify).toHaveBeenCalledTimes(2);
+      expect(myDatabaseServiceMock.refreshTokens.delete).toHaveBeenCalled();
+    });
   });
 
   describe('Unsuccessful Requests', () => {
@@ -390,6 +432,103 @@ describe('AuthController', () => {
       ).rejects.toThrow(InternalServerErrorException);
 
       expect(myLoggerServiceMock.logError).toHaveBeenCalled();
+    });
+
+    it('signOut - it should fail to signOut the user because accessToken verification failed', async () => {
+      myJwtServiceMock.verify.mockResolvedValue({
+        status: false,
+        data: { jti: 'mock-jti' },
+        error: 'failed to verify access token',
+      });
+
+      await expect(
+        controller.signOut(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              access_token: 'fake-token',
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+        ),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('signOut - it should fail to signOut the user because refreshToken verification failed', async () => {
+      myJwtServiceMock.verify
+        .mockResolvedValueOnce({
+          status: true,
+          data: { jti: 'mock-jti' },
+          error: null,
+        })
+        .mockResolvedValue({
+          status: false,
+          data: { jti: 'mock-jti' },
+          error: 'failed to verify access token',
+        });
+
+      myRedisServiceMock.setInCache.mockResolvedValue({
+        status: true,
+      });
+
+      await expect(
+        controller.signOut(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              access_token: 'fake-token',
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+        ),
+      ).rejects.toThrow(InternalServerErrorException);
+
+      expect(myRedisServiceMock.setInCache).toHaveBeenCalled();
+      expect(myJwtServiceMock.verify).toHaveBeenCalledTimes(2);
+    });
+
+    it('signOut - it should fail to signOut the user because refreshToken failed to be deleted from database', async () => {
+      myJwtServiceMock.verify
+        .mockResolvedValueOnce({
+          status: true,
+          data: { jti: 'mock-jti' },
+          error: null,
+        })
+        .mockResolvedValue({
+          status: true,
+          data: { jti: 'mock-jti' },
+          error: null,
+        });
+
+      myRedisServiceMock.setInCache.mockResolvedValue({
+        status: true,
+      });
+
+      myDatabaseServiceMock.refreshTokens.findUnique.mockRejectedValue(
+        new PrismaClientUnknownRequestError('Database failed to connect', {
+          clientVersion: '7.0',
+        }),
+      );
+
+      await expect(
+        controller.signOut(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              access_token: 'fake-token',
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+        ),
+      ).rejects.toThrow(InternalServerErrorException);
+
+      expect(myRedisServiceMock.setInCache).toHaveBeenCalled();
+      expect(myJwtServiceMock.verify).toHaveBeenCalledTimes(2);
+      expect(myDatabaseServiceMock.refreshTokens.findUnique).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.refreshTokens.delete).not.toHaveBeenCalled();
     });
   });
 });

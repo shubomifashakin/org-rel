@@ -325,70 +325,89 @@ export class AuthService {
   }
 
   async signOut(userId: string, refreshToken: string, accessToken: string) {
-    const accessKeyReq = await this.jwtService.verify(accessToken);
+    try {
+      const accessKeyReq = await this.jwtService.verify(accessToken);
 
-    if (!accessKeyReq.status) {
-      this.loggerService.logError({
-        reason: accessKeyReq.error,
-        message: 'Failed to verify access token',
-      });
+      if (!accessKeyReq.status) {
+        this.loggerService.logError({
+          reason: accessKeyReq.error,
+          message: 'Failed to verify access token',
+        });
 
-      throw new InternalServerErrorException();
-    }
+        throw new InternalServerErrorException();
+      }
 
-    if (accessKeyReq.data?.jti) {
-      //blacklist the accesstoken immeidiately
-      const accessKeyId = accessKeyReq.data.jti;
+      if (accessKeyReq.data?.jti) {
+        //blacklist the accesstoken immeidiately
+        const accessKeyId = accessKeyReq.data.jti;
 
-      const { status, error } = await this.redisService.setInCache(
-        makeBlacklistedKey(accessKeyId),
-        true,
-        MINUTES_10,
-      );
+        const { status, error } = await this.redisService.setInCache(
+          makeBlacklistedKey(accessKeyId),
+          true,
+          MINUTES_10,
+        );
+
+        if (!status) {
+          this.loggerService.logError({
+            reason: error,
+            message: 'Failed to blacklist access token',
+          });
+        }
+      }
+
+      const { status, error, data } =
+        await this.jwtService.verify(refreshToken);
 
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          message: 'Failed to blacklist access token',
+          message: 'Failed to verify refresh token',
+        });
+
+        throw new InternalServerErrorException('Internal Server Error');
+      }
+
+      if (!data?.jti) {
+        //if theres no jti then nothing to revoke
+        return { message: 'success' };
+      }
+
+      const refreshTokenJti = data.jti;
+
+      const sessionExists = await this.databaseService.refreshTokens.findUnique(
+        {
+          where: {
+            userId,
+            id: refreshTokenJti,
+          },
+          select: {
+            id: true,
+          },
+        },
+      );
+
+      if (sessionExists) {
+        await this.databaseService.refreshTokens.delete({
+          where: { id: sessionExists.id },
         });
       }
-    }
 
-    const { status, error, data } = await this.jwtService.verify(refreshToken);
-
-    if (!status) {
-      this.loggerService.logError({
-        reason: error,
-        message: 'Failed to verify refresh token',
-      });
+      return { message: 'success' };
+    } catch (error) {
+      if (error instanceof Error) {
+        this.loggerService.logError({
+          message: 'Failed to sign out user',
+          reason: `${error.name}: ${error.message}`,
+        });
+      } else {
+        this.loggerService.logError({
+          message: 'Failed to sign out user',
+          reason: error,
+        });
+      }
 
       throw new InternalServerErrorException('Internal Server Error');
     }
-
-    if (!data?.jti) {
-      //if theres no jti then nothing to revoke
-      return { message: 'success' };
-    }
-
-    const refreshTokenJti = data.jti;
-
-    const sessionExists = await this.databaseService.refreshTokens.findUnique({
-      where: {
-        userId,
-        id: refreshTokenJti,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (sessionExists) {
-      await this.databaseService.refreshTokens.delete({
-        where: { id: sessionExists.id },
-      });
-    }
-
-    return { message: 'success' };
   }
 
   async refresh(ipAddr: string, oldRefreshToken?: string, userAgent?: string) {
