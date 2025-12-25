@@ -21,6 +21,7 @@ import {
   ConflictException,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   PrismaClientKnownRequestError,
@@ -109,7 +110,7 @@ describe('AuthController', () => {
         AppLoggerModule,
       ],
       providers: [AuthService],
-    }) //FIXME: IMPLEMENT BETTER OVERRIDES
+    })
       .overrideProvider(DatabaseService)
       .useValue(myDatabaseServiceMock)
       .overrideProvider(RedisService)
@@ -214,6 +215,8 @@ describe('AuthController', () => {
         hash: mockUser.password,
         plainString: mockUser.password,
       });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockResponse.cookie).toHaveBeenCalledTimes(2);
     });
 
     it('signOut - it should signOut the user', async () => {
@@ -252,6 +255,60 @@ describe('AuthController', () => {
       expect(myDatabaseServiceMock.refreshTokens.findUnique).toHaveBeenCalled();
       expect(myJwtServiceMock.verify).toHaveBeenCalledTimes(2);
       expect(myDatabaseServiceMock.refreshTokens.delete).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('refresh - it should refresh the token', async () => {
+      myJwtServiceMock.verify.mockResolvedValue({
+        status: true,
+        data: { jti: 'refresh' },
+        error: null,
+      });
+
+      myDatabaseServiceMock.refreshTokens.findUnique.mockResolvedValue({
+        expiresAt: new Date(Date.now() * 10),
+        userId: mockUser.id,
+        user: {
+          email: mockUser.email,
+        },
+      });
+
+      myDatabaseServiceMock.refreshTokens.delete.mockResolvedValue(null);
+
+      myHasherServiceMock.hashString.mockResolvedValue({
+        status: true,
+        data: 'mock-refresh-hashed',
+        error: null,
+      });
+
+      myJwtServiceMock.sign.mockResolvedValue({
+        status: true,
+        data: 'mock-jwt',
+        error: null,
+      });
+
+      myDatabaseServiceMock.refreshTokens.create.mockResolvedValue(null);
+
+      expect(
+        await controller.refresh(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+          '123.127',
+        ),
+      ).toEqual({ message: 'success' });
+
+      expect(myLoggerServiceMock.logError).not.toHaveBeenCalled();
+      expect(myJwtServiceMock.verify).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.refreshTokens.findUnique).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.refreshTokens.delete).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockResponse.cookie).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -529,6 +586,158 @@ describe('AuthController', () => {
       expect(myJwtServiceMock.verify).toHaveBeenCalledTimes(2);
       expect(myDatabaseServiceMock.refreshTokens.findUnique).toHaveBeenCalled();
       expect(myDatabaseServiceMock.refreshTokens.delete).not.toHaveBeenCalled();
+    });
+
+    it('refresh - it should not refresh the token because the server failed to verify the refresh token', async () => {
+      myJwtServiceMock.verify.mockResolvedValue({
+        status: false,
+        data: null,
+        error: 'Failed to verify refresh token',
+      });
+
+      await expect(
+        controller.refresh(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+          '123.127',
+        ),
+      ).rejects.toThrow(InternalServerErrorException);
+
+      expect(myLoggerServiceMock.logError).toHaveBeenCalled();
+      expect(myJwtServiceMock.verify).toHaveBeenCalled();
+    });
+
+    it('refresh - it should not refresh the token because the users token has expired or token is invalid', async () => {
+      myJwtServiceMock.verify.mockResolvedValue({
+        status: true,
+        data: null,
+        error: null,
+      });
+
+      await expect(
+        controller.refresh(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+          '123.127',
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(myLoggerServiceMock.logError).not.toHaveBeenCalled();
+      expect(myJwtServiceMock.verify).toHaveBeenCalled();
+    });
+
+    it('refresh - it should not refresh the token does not exist in database', async () => {
+      myJwtServiceMock.verify.mockResolvedValue({
+        status: true,
+        data: { jti: 'refresh' },
+        error: null,
+      });
+
+      myDatabaseServiceMock.refreshTokens.findUnique.mockResolvedValue(null);
+
+      await expect(
+        controller.refresh(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+          '123.127',
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(myLoggerServiceMock.logError).not.toHaveBeenCalled();
+      expect(myJwtServiceMock.verify).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.refreshTokens.findUnique).toHaveBeenCalled();
+    });
+
+    it('refresh - it should not refresh the token has has expired', async () => {
+      myJwtServiceMock.verify.mockResolvedValue({
+        status: true,
+        data: { jti: 'refresh' },
+        error: null,
+      });
+
+      myDatabaseServiceMock.refreshTokens.findUnique.mockResolvedValue({
+        expiresAt: new Date(100),
+      });
+
+      myDatabaseServiceMock.refreshTokens.delete.mockResolvedValue(null);
+
+      await expect(
+        controller.refresh(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+          '123.127',
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(myLoggerServiceMock.logError).not.toHaveBeenCalled();
+      expect(myJwtServiceMock.verify).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.refreshTokens.findUnique).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.refreshTokens.delete).toHaveBeenCalled();
+    });
+
+    it('refresh - it should not refresh the token because server failed to sign jwt', async () => {
+      myJwtServiceMock.verify.mockResolvedValue({
+        status: true,
+        data: { jti: 'refresh' },
+        error: null,
+      });
+
+      myDatabaseServiceMock.refreshTokens.findUnique.mockResolvedValue({
+        expiresAt: new Date(Date.now() * 10),
+        userId: mockUser.id,
+        user: {
+          email: mockUser.email,
+        },
+      });
+
+      myDatabaseServiceMock.refreshTokens.delete.mockResolvedValue(null);
+
+      myJwtServiceMock.sign.mockResolvedValue({
+        status: false,
+        data: 'mock-jwt',
+        error: 'Failed to sign',
+      });
+
+      await expect(
+        controller.refresh(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          mockResponse,
+          '123.127',
+        ),
+      ).rejects.toThrow(InternalServerErrorException);
+
+      expect(myJwtServiceMock.verify).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.refreshTokens.findUnique).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.refreshTokens.delete).toHaveBeenCalled();
+
+      expect(myJwtServiceMock.sign).toHaveBeenCalled();
+      expect(myLoggerServiceMock.logError).toHaveBeenCalledTimes(1);
+      expect(myHasherServiceMock.hashString).not.toHaveBeenCalled();
     });
   });
 });
