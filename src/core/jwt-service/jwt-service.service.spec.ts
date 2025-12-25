@@ -39,6 +39,8 @@ describe('JwtServiceService', () => {
       .compile();
 
     service = module.get<JwtServiceService>(JwtServiceService);
+
+    jest.resetAllMocks();
   });
 
   it('should be defined', () => {
