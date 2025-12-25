@@ -79,9 +79,7 @@ export class SecretsManagerService
         throw new InternalServerErrorException('Secret string is empty');
       }
 
-      const jwtSecret = JSON.parse(secret.SecretString) as {
-        JWT_SECRET: string;
-      };
+      const jwtSecret = JSON.parse(secret.SecretString) as T;
 
       const storeInCache = await this.redisService.setInCache(
         secretId,
@@ -93,7 +91,7 @@ export class SecretsManagerService
         this.loggerService.error(storeInCache.error);
       }
 
-      return { status: true, data: jwtSecret as T, error: null };
+      return { status: true, data: jwtSecret, error: null };
     } catch (err) {
       if (err instanceof Error) {
         return {
