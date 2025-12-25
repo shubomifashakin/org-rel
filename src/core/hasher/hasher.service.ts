@@ -16,9 +16,6 @@ export class HasherService {
 
       return { status: true, data: hash, error: null };
     } catch (error: unknown) {
-      //FIXME: USE A BETTER LOGGER
-      console.log(error);
-
       if (error instanceof Error) {
         return { status: false, data: null, error: error.message };
       }
@@ -39,9 +36,6 @@ export class HasherService {
 
       return { status: true, data: isTheSame, error: null };
     } catch (error: unknown) {
-      //FIXME: USE A BETTER LOGGER
-      console.log(error);
-
       if (error instanceof Error) {
         return { status: false, data: null, error: error.message };
       }
