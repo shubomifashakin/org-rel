@@ -6,6 +6,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { ClsModule } from 'nestjs-cls';
 import { v4 as uuid } from 'uuid';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -36,6 +37,7 @@ import { HasherModule } from './core/hasher/hasher.module.js';
     AppConfigModule,
     AppLoggerModule,
     HasherModule,
+    ConfigModule.forRoot({ isGlobal: false }),
     ClsModule.forRoot({
       global: true,
       middleware: {
