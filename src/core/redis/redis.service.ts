@@ -7,7 +7,7 @@ import { createClient, RedisClientType } from 'redis';
 import { AppLoggerService } from '../app-logger/app-logger.service.js';
 import { AppConfigService } from '../app-config/app-config.service.js';
 
-import { DAYS_7 } from '../../common/utils/constants.js';
+import { DAYS_1 } from '../../common/utils/constants.js';
 import { FnResult } from '../../types/fnResult.js';
 
 @Injectable()
@@ -120,7 +120,7 @@ export class RedisService
   async setInCache(
     key: string,
     data: any,
-    exp: number = DAYS_7,
+    exp: number = DAYS_1,
   ): Promise<FnResult<null>> {
     try {
       await this.client.set(key, JSON.stringify(data), {
