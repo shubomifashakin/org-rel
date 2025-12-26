@@ -30,6 +30,7 @@ import {
 import { HasherService } from '../../core/hasher/hasher.service.js';
 import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
 import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
+import { ConfigModule } from '@nestjs/config';
 
 const mockResponse = {
   cookie: jest.fn(),
@@ -94,6 +95,10 @@ describe('AuthController', () => {
         S3Module,
         AppConfigModule,
         HasherModule,
+        ConfigModule.forRoot({
+          isGlobal: false,
+          envFilePath: ['.env.test.local'],
+        }),
         JwtServiceModule,
         ClsModule.forRoot({
           global: true,

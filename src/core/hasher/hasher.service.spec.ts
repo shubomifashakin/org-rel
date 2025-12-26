@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigModule } from '@nestjs/config';
+
 import { HasherService } from './hasher.service.js';
 
 describe('HasherService', () => {
@@ -8,6 +10,12 @@ describe('HasherService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [HasherService],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: false,
+          envFilePath: ['.env.test.local'],
+        }),
+      ],
     }).compile();
 
     service = module.get<HasherService>(HasherService);

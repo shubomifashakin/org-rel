@@ -1,5 +1,6 @@
 import { ClsModule } from 'nestjs-cls';
 
+import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppLoggerService } from './app-logger.service.js';
 import { AppConfigModule } from '../app-config/app-config.module.js';
@@ -12,6 +13,10 @@ describe('AppLoggerService', () => {
       providers: [AppLoggerService],
       imports: [
         AppConfigModule,
+        ConfigModule.forRoot({
+          isGlobal: false,
+          envFilePath: ['.env.test.local'],
+        }),
         ClsModule.forRoot({
           global: true,
           middleware: {

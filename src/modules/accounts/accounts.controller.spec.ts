@@ -21,6 +21,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
 const mockResponse = {
   cookie: jest.fn(),
@@ -64,10 +65,6 @@ const myRedisServiceMock = {
   deleteFromCache: jest.fn(),
 };
 
-// const mySecretsManagerServiceMock = {
-//   getSecret: jest.fn(),
-// };
-
 // const myHasherServiceMock = {
 //   hashString: jest.fn(),
 //   compareHashedString: jest.fn(),
@@ -91,6 +88,10 @@ describe('AccountsController', () => {
       providers: [AccountsService],
       imports: [
         DatabaseModule,
+        ConfigModule.forRoot({
+          isGlobal: false,
+          envFilePath: ['.env.test.local'],
+        }),
         SecretsManagerModule,
         S3Module,
         RedisModule,

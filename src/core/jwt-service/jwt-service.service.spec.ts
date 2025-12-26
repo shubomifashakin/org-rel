@@ -1,5 +1,6 @@
 import { ClsModule } from 'nestjs-cls';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigModule } from '@nestjs/config';
 
 import { JwtServiceService } from './jwt-service.service.js';
 import { AppConfigModule } from '../app-config/app-config.module.js';
@@ -20,6 +21,10 @@ describe('JwtServiceService', () => {
       imports: [
         SecretsManagerModule,
         AppConfigModule,
+        ConfigModule.forRoot({
+          isGlobal: false,
+          envFilePath: ['.env.test.local'],
+        }),
         ClsModule.forRoot({
           global: true,
           middleware: {
