@@ -6,9 +6,26 @@ import { JwtServiceService } from './jwt-service.service.js';
 import { AppConfigModule } from '../app-config/app-config.module.js';
 import { SecretsManagerModule } from '../secrets-manager/secrets-manager.module.js';
 import { SecretsManagerService } from '../secrets-manager/secrets-manager.service.js';
+import { AppConfigService } from '../app-config/app-config.service.js';
 
 const mockSecretManagerService = {
   getSecret: jest.fn(),
+};
+
+const myConfigServiceMock = {
+  S3BucketName: { status: true, data: 'eu-west-1' },
+  LogLevel: { status: true, data: 'eu-west-1' },
+  Environment: { status: true, data: 'test' },
+  JWTSecretName: { status: true, data: 'eu-west-1' },
+  AWSRegion: { status: true, data: 'eu-west-1' },
+  AWSAccessKey: { status: true, data: 'eu-west-1' },
+  AWSSecretKey: { status: true, data: 'eu-west-1' },
+  ResendApiKey: { status: true, data: 'test-api-key' },
+  MailerFrom: { status: true, data: 'example@example.com' },
+  DatabaseUrl: { status: true, data: 'test-db-url' },
+  RedisUrl: { status: true, data: 'redis://localhost:6379' },
+  ServiceName: { status: true, data: 'test-environment' },
+  ClientDomainName: { status: true, data: 'test-domain.com' },
 };
 
 describe('JwtServiceService', () => {
@@ -39,6 +56,8 @@ describe('JwtServiceService', () => {
         }),
       ],
     })
+      .overrideProvider(AppConfigService)
+      .useValue(myConfigServiceMock)
       .overrideProvider(SecretsManagerService)
       .useValue(mockSecretManagerService)
       .compile();

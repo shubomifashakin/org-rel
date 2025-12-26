@@ -15,6 +15,7 @@ import { AppLoggerModule } from '../../core/app-logger/app-logger.module.js';
 import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
 import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
+import { AppConfigService } from '../../core/app-config/app-config.service.js';
 
 import {
   BadRequestException,
@@ -65,15 +66,21 @@ const myRedisServiceMock = {
   deleteFromCache: jest.fn(),
 };
 
-// const myHasherServiceMock = {
-//   hashString: jest.fn(),
-//   compareHashedString: jest.fn(),
-// };
-
-// const myJwtServiceMock = {
-//   sign: jest.fn(),
-//   verify: jest.fn(),
-// };
+const myConfigServiceMock = {
+  S3BucketName: { status: true, data: 'eu-west-1' },
+  LogLevel: { status: true, data: 'eu-west-1' },
+  Environment: { status: true, data: 'test' },
+  JWTSecretName: { status: true, data: 'eu-west-1' },
+  AWSRegion: { status: true, data: 'eu-west-1' },
+  AWSAccessKey: { status: true, data: 'eu-west-1' },
+  AWSSecretKey: { status: true, data: 'eu-west-1' },
+  ResendApiKey: { status: true, data: 'test-api-key' },
+  MailerFrom: { status: true, data: 'example@example.com' },
+  DatabaseUrl: { status: true, data: 'test-db-url' },
+  RedisUrl: { status: true, data: 'redis://localhost:6379' },
+  ServiceName: { status: true, data: 'test-environment' },
+  ClientDomainName: { status: true, data: 'test-domain.com' },
+};
 
 const myLoggerServiceMock = {
   logError: jest.fn(),
@@ -90,7 +97,6 @@ describe('AccountsController', () => {
         DatabaseModule,
         ConfigModule.forRoot({
           isGlobal: false,
-          envFilePath: ['.env.test.local'],
         }),
         SecretsManagerModule,
         S3Module,
@@ -112,6 +118,8 @@ describe('AccountsController', () => {
         }),
       ],
     })
+      .overrideProvider(AppConfigService)
+      .useValue(myConfigServiceMock)
       .overrideProvider(DatabaseService)
       .useValue(myDatabaseServiceMock)
       .overrideProvider(RedisService)

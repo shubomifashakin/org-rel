@@ -31,6 +31,7 @@ import { HasherService } from '../../core/hasher/hasher.service.js';
 import { JwtServiceService } from '../../core/jwt-service/jwt-service.service.js';
 import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
 import { ConfigModule } from '@nestjs/config';
+import { AppConfigService } from '../../core/app-config/app-config.service.js';
 
 const mockResponse = {
   cookie: jest.fn(),
@@ -82,6 +83,22 @@ const myLoggerServiceMock = {
   logError: jest.fn(),
 };
 
+const myConfigServiceMock = {
+  S3BucketName: { status: true, data: 'eu-west-1' },
+  LogLevel: { status: true, data: 'eu-west-1' },
+  Environment: { status: true, data: 'test' },
+  JWTSecretName: { status: true, data: 'eu-west-1' },
+  AWSRegion: { status: true, data: 'eu-west-1' },
+  AWSAccessKey: { status: true, data: 'eu-west-1' },
+  AWSSecretKey: { status: true, data: 'eu-west-1' },
+  ResendApiKey: { status: true, data: 'test-api-key' },
+  MailerFrom: { status: true, data: 'example@example.com' },
+  DatabaseUrl: { status: true, data: 'test-db-url' },
+  RedisUrl: { status: true, data: 'test-db-url' },
+  ServiceName: { status: true, data: 'test-environment' },
+  ClientDomainName: { status: true, data: 'test-domain.com' },
+};
+
 describe('AuthController', () => {
   let controller: AuthController;
 
@@ -97,7 +114,6 @@ describe('AuthController', () => {
         HasherModule,
         ConfigModule.forRoot({
           isGlobal: false,
-          envFilePath: ['.env.test.local'],
         }),
         JwtServiceModule,
         ClsModule.forRoot({
@@ -116,6 +132,8 @@ describe('AuthController', () => {
       ],
       providers: [AuthService],
     })
+      .overrideProvider(AppConfigService)
+      .useValue(myConfigServiceMock)
       .overrideProvider(DatabaseService)
       .useValue(myDatabaseServiceMock)
       .overrideProvider(RedisService)

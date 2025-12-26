@@ -2,6 +2,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 
 import { HasherService } from './hasher.service.js';
+import { AppConfigService } from '../app-config/app-config.service.js';
+
+const myConfigServiceMock = {
+  S3BucketName: { status: true, data: 'eu-west-1' },
+  LogLevel: { status: true, data: 'eu-west-1' },
+  Environment: { status: true, data: 'test' },
+  JWTSecretName: { status: true, data: 'eu-west-1' },
+  AWSRegion: { status: true, data: 'eu-west-1' },
+  AWSAccessKey: { status: true, data: 'eu-west-1' },
+  AWSSecretKey: { status: true, data: 'eu-west-1' },
+  ResendApiKey: { status: true, data: 'test-api-key' },
+  MailerFrom: { status: true, data: 'example@example.com' },
+  DatabaseUrl: { status: true, data: 'test-db-url' },
+  RedisUrl: { status: true, data: 'redis://localhost:6379' },
+  ServiceName: { status: true, data: 'test-environment' },
+  ClientDomainName: { status: true, data: 'test-domain.com' },
+};
 
 describe('HasherService', () => {
   let service: HasherService;
@@ -16,7 +33,10 @@ describe('HasherService', () => {
           envFilePath: ['.env.test.local'],
         }),
       ],
-    }).compile();
+    })
+      .overrideProvider(AppConfigService)
+      .useValue(myConfigServiceMock)
+      .compile();
 
     service = module.get<HasherService>(HasherService);
   });
