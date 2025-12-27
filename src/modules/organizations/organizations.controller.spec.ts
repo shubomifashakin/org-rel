@@ -127,7 +127,7 @@ describe('OrganizationsController', () => {
   });
 
   describe('Succesful Requests', () => {
-    it('should create organization', async () => {
+    it('createOrganization - should create organization', async () => {
       const createdAt = new Date();
       myDatabaseServiceMock.organizations.create.mockResolvedValue({
         name: organizationName,
@@ -164,7 +164,7 @@ describe('OrganizationsController', () => {
       );
     });
 
-    it('should create organization with an image', async () => {
+    it('createOrganization - should create organization with an image', async () => {
       const imageUrl = 'https://test-bucket.s3.amazonaws.com/test-key';
 
       const createdAt = new Date();
@@ -240,7 +240,7 @@ describe('OrganizationsController', () => {
       );
     });
 
-    it('should get an organization the user is a member of', async () => {
+    it('getOrganizationsUserIsMemberOf - should get an organization the user is a member of', async () => {
       const imageUrl = 'https://test-bucket.s3.amazonaws.com/test-key';
 
       const assignedAt = new Date();
@@ -348,7 +348,7 @@ describe('OrganizationsController', () => {
   });
 
   describe('Unsuccesful Requests', () => {
-    it('should not create the org when database fails', async () => {
+    it('createOrganization - should not create the org when database fails', async () => {
       myDatabaseServiceMock.organizations.create.mockRejectedValue(
         new Error('Database failure'),
       );
@@ -371,7 +371,7 @@ describe('OrganizationsController', () => {
       expect(myRedisServiceMock.setInCache).not.toHaveBeenCalled();
     });
 
-    it('should log the error when redis fails', async () => {
+    it('createOrganization - should log the error when redis fails', async () => {
       const createdAt = new Date();
       myDatabaseServiceMock.organizations.create.mockResolvedValue({
         name: organizationName,
@@ -416,7 +416,7 @@ describe('OrganizationsController', () => {
       });
     });
 
-    it('should fail to get an organization the user is a member of', async () => {
+    it('getOrganizationsUserIsMemberOf - should fail to get an organization the user is a member of', async () => {
       await expect(
         controller.getAllOrganizationsUserIsMemberOf({
           user: { id: 'mock-user-id', email: 'test@email.com' },
