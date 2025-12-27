@@ -143,7 +143,7 @@ export class OrganizationsUserService {
     updateOrgUserDto: UpdateOrgUserDto,
   ) {
     try {
-      const userIsAdmin =
+      const usersRole =
         await this.databaseService.organizationsOnUsers.findUnique({
           where: {
             organizationId_userId: {
@@ -156,11 +156,15 @@ export class OrganizationsUserService {
           },
         });
 
-      if (!userIsAdmin) {
+      if (!usersRole) {
         throw new NotFoundException('User does not exist');
       }
 
-      if (userIsAdmin.role === 'ADMIN' && updateOrgUserDto.role !== 'ADMIN') {
+      if (usersRole.role === updateOrgUserDto.role) {
+        return { message: 'success' };
+      }
+
+      if (usersRole.role === 'ADMIN' && updateOrgUserDto.role !== 'ADMIN') {
         const otherAdminsExist =
           await this.databaseService.organizationsOnUsers.findFirst({
             where: {

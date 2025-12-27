@@ -25,6 +25,7 @@ import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager
 import { Readable } from 'node:stream';
 import { S3Service } from '../../core/s3/s3.service.js';
 import {
+  BadRequestException,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
@@ -56,6 +57,8 @@ const myDatabaseServiceMock = {
   organizationsOnUsers: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
   },
 };
 
@@ -573,6 +576,62 @@ describe('OrganizationsController', () => {
         MINUTES_10,
       );
     });
+
+    it('updateOneOrgUsersRole - it should update an organization users role from user to admin', async () => {
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue({
+        role: 'USER',
+      });
+
+      myDatabaseServiceMock.organizationsOnUsers.update.mockResolvedValue({
+        user: {
+          id: userId,
+          email: 'test@example.com',
+          image: null,
+          fullname: 'Test User',
+          username: 'testuser',
+        },
+        role: 'ADMIN',
+      });
+
+      const result = await controller.updateOneOrgUsersRole(
+        organizationId,
+        userId,
+        { role: 'ADMIN' },
+      );
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findUnique,
+      ).toHaveBeenCalledWith({
+        where: {
+          organizationId_userId: {
+            userId,
+            organizationId,
+          },
+        },
+        select: {
+          role: true,
+        },
+      });
+
+      const resultObj = {
+        id: userId,
+        email: 'test@example.com',
+        fullname: 'Test User',
+        image: null,
+        username: 'testuser',
+        role: 'ADMIN',
+      };
+
+      expect(result).toEqual({ message: 'Success' });
+
+      expect(myRedisServiceMock.setInCache).toHaveBeenCalledWith(
+        makeUserCacheKey(organizationId, userId),
+        resultObj,
+        MINUTES_10,
+      );
+    });
   });
 
   describe('Unsuccesful Requests', () => {
@@ -784,6 +843,42 @@ describe('OrganizationsController', () => {
           },
         },
       });
+    });
+
+    it('updateOneOrgUsersRole - it should prevent updating a non-existent user', async () => {
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        controller.updateOneOrgUsersRole(organizationId, userId, {
+          role: 'USER',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('updateOneOrgUsersRole - it should prevent updating the only organization admin from admin to user', async () => {
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue({
+        role: 'ADMIN',
+      });
+
+      myDatabaseServiceMock.organizationsOnUsers.findFirst.mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        controller.updateOneOrgUsersRole(organizationId, userId, {
+          role: 'USER',
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findFirst,
+      ).toHaveBeenCalled();
     });
   });
 });
