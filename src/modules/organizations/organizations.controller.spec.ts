@@ -3,7 +3,7 @@ import { ClsModule } from 'nestjs-cls';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { makeOrganizationCacheKey } from './common/utils.js';
+import { makeOrganizationCacheKey, makeUserCacheKey } from './common/utils.js';
 import { OrganizationsController } from './organizations.controller.js';
 import { OrganizationsService } from './organizations.service.js';
 import { OrganizationsUserService } from './services/organizations-user.service.js';
@@ -25,6 +25,7 @@ import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager
 import { Readable } from 'node:stream';
 import { S3Service } from '../../core/s3/s3.service.js';
 import { NotFoundException } from '@nestjs/common';
+import { MINUTES_10 } from '../../common/utils/constants.js';
 
 const myConfigServiceMock = {
   S3BucketName: { status: true, data: 'eu-west-1' },
@@ -51,6 +52,7 @@ const myDatabaseServiceMock = {
   },
   organizationsOnUsers: {
     findMany: jest.fn(),
+    findUnique: jest.fn(),
   },
 };
 
@@ -70,6 +72,8 @@ const myS3ServiceMock = {
 
 const organizationName = 'test-organizations';
 const organizationId = 'test-org-id';
+
+const userId = 'test-user';
 
 describe('OrganizationsController', () => {
   let controller: OrganizationsController;
@@ -452,6 +456,120 @@ describe('OrganizationsController', () => {
         message: 'success',
       });
     });
+
+    it('getOrgUsers - it should get all organization Users', async () => {
+      myDatabaseServiceMock.organizationsOnUsers.findMany.mockResolvedValue([
+        {
+          role: 'ADMIN',
+          user: {
+            id: userId,
+            image: null,
+            email: 'test@example.com',
+            fullname: 'Test User',
+            username: 'testuser',
+          },
+        },
+      ]);
+
+      const result = await controller.getOrgUsers(organizationId);
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findMany,
+      ).toHaveBeenCalledWith({
+        where: {
+          organizationId,
+        },
+        select: {
+          role: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              image: true,
+              username: true,
+              fullname: true,
+            },
+          },
+        },
+        take: 11,
+        cursor: undefined,
+      });
+
+      expect(result).toEqual({
+        users: [
+          {
+            role: 'ADMIN',
+            id: userId,
+            image: null,
+            email: 'test@example.com',
+            fullname: 'Test User',
+            username: 'testuser',
+          },
+        ],
+        hasNextPage: false,
+      });
+    });
+
+    it('getOneOrgUser - it should get an organization user', async () => {
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: null,
+      });
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      const resultObj = {
+        id: userId,
+        email: 'test@example.com',
+        fullname: 'Test User',
+        image: null,
+        username: 'testuser',
+        role: 'ADMIN',
+      };
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue({
+        role: 'ADMIN',
+        user: {
+          id: userId,
+          image: null,
+          email: 'test@example.com',
+          fullname: 'Test User',
+          username: 'testuser',
+        },
+      });
+
+      const result = await controller.getOneOrgUser(organizationId, userId);
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findUnique,
+      ).toHaveBeenCalledWith({
+        where: {
+          organizationId_userId: {
+            userId,
+            organizationId,
+          },
+        },
+        select: {
+          role: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              image: true,
+              username: true,
+              fullname: true,
+            },
+          },
+        },
+      });
+
+      expect(result).toEqual(resultObj);
+
+      expect(myRedisServiceMock.setInCache).toHaveBeenCalledWith(
+        makeUserCacheKey(organizationId, userId),
+        resultObj,
+        MINUTES_10,
+      );
+    });
   });
 
   describe('Unsuccesful Requests', () => {
@@ -589,6 +707,54 @@ describe('OrganizationsController', () => {
       });
 
       expect(myRedisServiceMock.deleteFromCache).not.toHaveBeenCalled();
+    });
+
+    it('getOrgUsers - it should fail to get all organization Users because database failed', async () => {
+      myDatabaseServiceMock.organizationsOnUsers.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
+      await expect(controller.getOrgUsers(organizationId)).rejects.toThrow(
+        Error,
+      );
+    });
+
+    it('getOneOrgUser - it should not get an organization user because the user doesnot exist', async () => {
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: null,
+      });
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        controller.getOneOrgUser(organizationId, userId),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findUnique,
+      ).toHaveBeenCalledWith({
+        where: {
+          organizationId_userId: {
+            userId,
+            organizationId,
+          },
+        },
+        select: {
+          role: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              image: true,
+              username: true,
+              fullname: true,
+            },
+          },
+        },
+      });
     });
   });
 });
