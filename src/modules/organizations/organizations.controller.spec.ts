@@ -73,6 +73,20 @@ const myDatabaseServiceMock = {
     update: jest.fn(),
     delete: jest.fn(),
   },
+  invites: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  users: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
 };
 
 const myRedisServiceMock = {
@@ -1182,6 +1196,96 @@ describe('OrganizationsController', () => {
       );
       expect(result).toEqual({ message: 'success' });
       expect(myDatabaseServiceMock.projects.delete).not.toHaveBeenCalled();
+    });
+
+    it('inviteOneUser - should throw error when user is already invited', async () => {
+      myDatabaseServiceMock.invites.findUnique.mockResolvedValue({
+        id: 'existing-invite',
+        email: 'existing@example.com',
+        organizationId,
+      });
+
+      await expect(
+        controller.inviteOneUser(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              access_token: 'fake-token',
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          organizationId,
+          { email: 'existing@example.com', role: 'USER' },
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('inviteOneUser - should throw error when inviter does not exist', async () => {
+      myDatabaseServiceMock.invites.findUnique.mockResolvedValue(null);
+      myDatabaseServiceMock.users.findUnique.mockResolvedValue(null);
+
+      await expect(
+        controller.inviteOneUser(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              access_token: 'fake-token',
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          organizationId,
+          { email: 'new@example.com', role: 'USER' },
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('inviteOneUser - should throw error when inviting self', async () => {
+      myDatabaseServiceMock.invites.findUnique.mockResolvedValue(null);
+      myDatabaseServiceMock.users.findUnique.mockResolvedValue({
+        fullname: 'Test User',
+        email: 'test@example.com',
+      });
+
+      await expect(
+        controller.inviteOneUser(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              access_token: 'fake-token',
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          organizationId,
+          { email: 'test@example.com', role: 'USER' },
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('inviteOneUser - should handle mailer configuration error', async () => {
+      myDatabaseServiceMock.invites.findUnique.mockResolvedValue(null);
+      myDatabaseServiceMock.users.findUnique.mockResolvedValue({
+        fullname: 'Test User',
+        email: 'test@example.com',
+      });
+      myDatabaseServiceMock.organizations.findUnique.mockResolvedValue({
+        name: 'Test Org',
+      });
+      myConfigServiceMock.MailerFrom.data = 'Configuration error';
+      myConfigServiceMock.MailerFrom.status = false;
+
+      await expect(
+        controller.inviteOneUser(
+          {
+            user: { id: 'mock-user-id', email: 'test@email.com' },
+            cookies: {
+              access_token: 'fake-token',
+              refresh_token: 'fake-token',
+            },
+          } as unknown as Request,
+          organizationId,
+          { email: 'new@example.com', role: 'USER' },
+        ),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 });
