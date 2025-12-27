@@ -46,6 +46,7 @@ const myDatabaseServiceMock = {
   organizations: {
     create: jest.fn(),
     findUnique: jest.fn(),
+    update: jest.fn(),
   },
   organizationsOnUsers: {
     findMany: jest.fn(),
@@ -345,6 +346,36 @@ describe('OrganizationsController', () => {
 
       expect(result).toBeDefined();
     });
+
+    it('updateOneOrganization - should update a single organization', async () => {
+      const createdAt = new Date();
+
+      const resolvedObject = {
+        id: organizationId,
+        name: 'Updated Name',
+        image: null,
+        createdAt,
+      };
+
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizations.update.mockResolvedValue(
+        resolvedObject,
+      );
+
+      const result = await controller.updateOneOrganization(organizationId, {
+        name: 'Updated Name',
+      });
+
+      expect(myRedisServiceMock.setInCache).toHaveBeenCalledWith(
+        makeOrganizationCacheKey(organizationId),
+        resolvedObject,
+      );
+
+      expect(result).toEqual({
+        message: 'success',
+      });
+    });
   });
 
   describe('Unsuccesful Requests', () => {
@@ -447,6 +478,20 @@ describe('OrganizationsController', () => {
 
       expect(myDatabaseServiceMock.organizations.findUnique).toHaveBeenCalled();
       expect(myRedisServiceMock.getFromCache).toHaveBeenCalled();
+    });
+
+    it('updateOneOrganization - should fail to update a single organization', async () => {
+      myDatabaseServiceMock.organizations.update.mockRejectedValue(
+        new Error('Update failed'),
+      );
+
+      await expect(
+        controller.updateOneOrganization(organizationId, {
+          name: 'Updated Name',
+        }),
+      ).rejects.toThrow(Error);
+
+      expect(myRedisServiceMock.setInCache).not.toHaveBeenCalled();
     });
   });
 });
