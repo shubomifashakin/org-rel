@@ -45,6 +45,9 @@ const myDatabaseServiceMock = {
   organizations: {
     create: jest.fn(),
   },
+  organizationsOnUsers: {
+    findMany: jest.fn(),
+  },
 };
 
 const myRedisServiceMock = {
@@ -60,6 +63,7 @@ const myS3ServiceMock = {
 };
 
 const organizationName = 'test-organizations';
+const organizationId = 'test-org-id';
 
 describe('OrganizationsController', () => {
   let controller: OrganizationsController;
@@ -124,7 +128,7 @@ describe('OrganizationsController', () => {
       const createdAt = new Date();
       myDatabaseServiceMock.organizations.create.mockResolvedValue({
         name: organizationName,
-        id: 'test-org-id',
+        id: organizationId,
         createdAt,
         image: null,
       });
@@ -145,11 +149,11 @@ describe('OrganizationsController', () => {
       );
 
       expect(result).toBeDefined();
-      expect(result.id).toBe('test-org-id');
+      expect(result.id).toBe(organizationId);
       expect(myRedisServiceMock.setInCache).toHaveBeenCalledWith(
-        makeOrganizationCacheKey('test-org-id'),
+        makeOrganizationCacheKey(organizationId),
         expect.objectContaining({
-          id: 'test-org-id',
+          id: organizationId,
           name: organizationName,
           image: null,
           createdAt,
@@ -163,7 +167,7 @@ describe('OrganizationsController', () => {
       const createdAt = new Date();
       myDatabaseServiceMock.organizations.create.mockResolvedValue({
         name: organizationName,
-        id: 'test-org-id',
+        id: organizationId,
         createdAt,
         image: imageUrl,
       });
@@ -221,16 +225,60 @@ describe('OrganizationsController', () => {
         },
       });
       expect(result).toBeDefined();
-      expect(result.id).toBe('test-org-id');
+      expect(result.id).toBe(organizationId);
       expect(myRedisServiceMock.setInCache).toHaveBeenCalledWith(
-        makeOrganizationCacheKey('test-org-id'),
+        makeOrganizationCacheKey(organizationId),
         expect.objectContaining({
-          id: 'test-org-id',
+          id: organizationId,
           name: organizationName,
           image: imageUrl,
           createdAt,
         }),
       );
+    });
+
+    it('should get an organization the user is a member of', async () => {
+      const imageUrl = 'https://test-bucket.s3.amazonaws.com/test-key';
+
+      const assignedAt = new Date();
+      myDatabaseServiceMock.organizationsOnUsers.findMany.mockResolvedValue([
+        {
+          role: 'ADMIN',
+          organization: {
+            id: organizationId,
+            name: organizationName,
+            image: imageUrl,
+          },
+          assignedAt,
+        },
+      ]);
+
+      const result = await controller.getAllOrganizationsUserIsMemberOf({
+        user: { id: 'mock-user-id', email: 'test@email.com' },
+        cookies: {
+          access_token: 'fake-token',
+          refresh_token: 'fake-token',
+        },
+      } as unknown as Request);
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findMany,
+      ).toHaveBeenCalled();
+
+      expect(result).toEqual({
+        organizations: [
+          {
+            role: 'ADMIN',
+            id: organizationId,
+            name: organizationName,
+            image: imageUrl,
+            assignedAt,
+          },
+        ],
+        hasNextPage: false,
+      });
+
+      expect(result).toBeDefined();
     });
   });
 
@@ -262,7 +310,7 @@ describe('OrganizationsController', () => {
       const createdAt = new Date();
       myDatabaseServiceMock.organizations.create.mockResolvedValue({
         name: organizationName,
-        id: 'test-org-id',
+        id: organizationId,
         createdAt,
         image: null,
       });
@@ -286,11 +334,11 @@ describe('OrganizationsController', () => {
       );
 
       expect(result).toBeDefined();
-      expect(result.id).toBe('test-org-id');
+      expect(result.id).toBe(organizationId);
       expect(myRedisServiceMock.setInCache).toHaveBeenCalledWith(
-        makeOrganizationCacheKey('test-org-id'),
+        makeOrganizationCacheKey(organizationId),
         expect.objectContaining({
-          id: 'test-org-id',
+          id: organizationId,
           name: organizationName,
           image: null,
           createdAt,
@@ -301,6 +349,22 @@ describe('OrganizationsController', () => {
         reason: 'Failed to store in cache',
         message: 'Failed to store organization info in cache',
       });
+    });
+
+    it('should fail to get an organization the user is a member of', async () => {
+      await expect(
+        controller.getAllOrganizationsUserIsMemberOf({
+          user: { id: 'mock-user-id', email: 'test@email.com' },
+          cookies: {
+            access_token: 'fake-token',
+            refresh_token: 'fake-token',
+          },
+        } as unknown as Request),
+      ).rejects.toThrow(Error);
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findMany,
+      ).toHaveBeenCalled();
     });
   });
 });
