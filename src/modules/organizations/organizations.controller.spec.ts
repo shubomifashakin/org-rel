@@ -24,6 +24,7 @@ import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
 import { Readable } from 'node:stream';
 import { S3Service } from '../../core/s3/s3.service.js';
+import { NotFoundException } from '@nestjs/common';
 
 const myConfigServiceMock = {
   S3BucketName: { status: true, data: 'eu-west-1' },
@@ -44,6 +45,7 @@ const myConfigServiceMock = {
 const myDatabaseServiceMock = {
   organizations: {
     create: jest.fn(),
+    findUnique: jest.fn(),
   },
   organizationsOnUsers: {
     findMany: jest.fn(),
@@ -52,6 +54,7 @@ const myDatabaseServiceMock = {
 
 const myRedisServiceMock = {
   setInCache: jest.fn(),
+  getFromCache: jest.fn(),
 };
 
 const myLoggerServiceMock = {
@@ -280,6 +283,68 @@ describe('OrganizationsController', () => {
 
       expect(result).toBeDefined();
     });
+
+    it('getOneOrganization - should get a single organization from database', async () => {
+      const imageUrl = 'https://test-bucket.s3.amazonaws.com/test-key';
+
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: null,
+      });
+
+      const createdAt = new Date();
+      myDatabaseServiceMock.organizations.findUnique.mockResolvedValue({
+        name: organizationName,
+        id: organizationId,
+        image: imageUrl,
+        createdAt,
+      });
+
+      const result = await controller.getOneOrganization(organizationId);
+
+      expect(myDatabaseServiceMock.organizations.findUnique).toHaveBeenCalled();
+      expect(myRedisServiceMock.getFromCache).toHaveBeenCalled();
+      expect(result).toEqual({
+        name: organizationName,
+        id: organizationId,
+        image: imageUrl,
+        createdAt,
+      });
+
+      expect(result).toBeDefined();
+    });
+
+    it('getOneOrganization - should get a single organization from cache', async () => {
+      const imageUrl = 'https://test-bucket.s3.amazonaws.com/test-key';
+      const createdAt = new Date();
+
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: {
+          name: organizationName,
+          id: organizationId,
+          image: imageUrl,
+          createdAt,
+        },
+      });
+
+      const result = await controller.getOneOrganization(organizationId);
+
+      expect(
+        myDatabaseServiceMock.organizations.findUnique,
+      ).not.toHaveBeenCalled();
+      expect(myRedisServiceMock.getFromCache).toHaveBeenCalled();
+
+      expect(result).toEqual({
+        name: organizationName,
+        id: organizationId,
+        image: imageUrl,
+        createdAt,
+      });
+
+      expect(result).toBeDefined();
+    });
   });
 
   describe('Unsuccesful Requests', () => {
@@ -365,6 +430,23 @@ describe('OrganizationsController', () => {
       expect(
         myDatabaseServiceMock.organizationsOnUsers.findMany,
       ).toHaveBeenCalled();
+    });
+
+    it('getOneOrganization - should fail to get a single organization from database because the organization did not exist', async () => {
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: null,
+      });
+
+      myDatabaseServiceMock.organizations.findUnique.mockResolvedValue(null);
+
+      await expect(
+        controller.getOneOrganization(organizationId),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(myDatabaseServiceMock.organizations.findUnique).toHaveBeenCalled();
+      expect(myRedisServiceMock.getFromCache).toHaveBeenCalled();
     });
   });
 });
