@@ -24,7 +24,10 @@ import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
 import { Readable } from 'node:stream';
 import { S3Service } from '../../core/s3/s3.service.js';
-import { NotFoundException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { MINUTES_10 } from '../../common/utils/constants.js';
 
 const myConfigServiceMock = {
@@ -686,6 +689,32 @@ describe('OrganizationsController', () => {
       ).rejects.toThrow(Error);
 
       expect(myRedisServiceMock.setInCache).not.toHaveBeenCalled();
+    });
+
+    it('updateOneOrganization - should handle S3 upload failure', async () => {
+      const updateDto = { name: 'Updated Org Name' };
+
+      const mockFile = {
+        buffer: Buffer.from('test'),
+        originalname: 'test.jpg',
+        mimetype: 'image/jpeg',
+      } as Express.Multer.File;
+
+      const error = 'upload failed';
+
+      myS3ServiceMock.uploadToS3.mockResolvedValue({
+        status: false,
+        error: error,
+      });
+
+      await expect(
+        controller.updateOneOrganization(organizationId, updateDto, mockFile),
+      ).rejects.toThrow(InternalServerErrorException);
+
+      expect(myLoggerServiceMock.logError).toHaveBeenCalledWith({
+        reason: error,
+        message: 'Failed to upload image to S3',
+      });
     });
 
     it('deleteOneOrganization - should not delete a single organization because database failed', async () => {
