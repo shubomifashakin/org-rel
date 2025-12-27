@@ -59,6 +59,7 @@ const myDatabaseServiceMock = {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
   },
 };
 
@@ -632,6 +633,49 @@ describe('OrganizationsController', () => {
         MINUTES_10,
       );
     });
+
+    it('deleteOneOrgUsersRole - it should delete an organization user', async () => {
+      myRedisServiceMock.deleteFromCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue({
+        role: 'USER',
+      });
+
+      myDatabaseServiceMock.organizationsOnUsers.delete.mockResolvedValue(null);
+
+      const result = await controller.deleteOneOrgUser(organizationId, userId);
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findUnique,
+      ).toHaveBeenCalledWith({
+        where: {
+          organizationId_userId: {
+            userId,
+            organizationId,
+          },
+        },
+        select: {
+          role: true,
+        },
+      });
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.delete,
+      ).toHaveBeenCalledWith({
+        where: {
+          organizationId_userId: {
+            userId,
+            organizationId,
+          },
+        },
+      });
+
+      expect(result).toEqual({ message: 'Success' });
+
+      expect(myRedisServiceMock.deleteFromCache).toHaveBeenCalledWith(
+        makeUserCacheKey(organizationId, userId),
+      );
+    });
   });
 
   describe('Unsuccesful Requests', () => {
@@ -874,6 +918,26 @@ describe('OrganizationsController', () => {
         controller.updateOneOrgUsersRole(organizationId, userId, {
           role: 'USER',
         }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findFirst,
+      ).toHaveBeenCalled();
+    });
+
+    it('deleteOneOrgUsersRole - it should prevent deleting the only organization admin', async () => {
+      myRedisServiceMock.deleteFromCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue({
+        role: 'ADMIN',
+      });
+
+      myDatabaseServiceMock.organizationsOnUsers.findFirst.mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        controller.deleteOneOrgUser(organizationId, userId),
       ).rejects.toThrow(BadRequestException);
 
       expect(
