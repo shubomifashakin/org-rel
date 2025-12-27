@@ -26,6 +26,7 @@ import { Readable } from 'node:stream';
 import { S3Service } from '../../core/s3/s3.service.js';
 import {
   BadRequestException,
+  ForbiddenException,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
@@ -58,6 +59,13 @@ const myDatabaseServiceMock = {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     findFirst: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  projects: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   },
@@ -943,6 +951,67 @@ describe('OrganizationsController', () => {
       expect(
         myDatabaseServiceMock.organizationsOnUsers.findFirst,
       ).toHaveBeenCalled();
+    });
+
+    it('createOrgProject - should throw error when user is not a member', async () => {
+      const createDto = { name: 'New Project', userId: 'user1' };
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        controller.createOrgProject('org1', createDto),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('getOneOrgProject - should throw error when project not found', async () => {
+      myRedisServiceMock.getFromCache.mockResolvedValue({ status: false });
+      myDatabaseServiceMock.projects.findUnique.mockResolvedValue(null);
+
+      await expect(
+        controller.getOneOrgProject('org1', 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('updateOneOrgProject - should throw error when new user assigned to project is not a member of org', async () => {
+      const updateDto = { userId: 'newuser', name: 'Updated Project' };
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        controller.updateOneOrgProject('org1', 'proj1', updateDto),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('updateOneOrgProject - should handle S3 upload failure', async () => {
+      const mockFile = {
+        buffer: Buffer.from('test'),
+        originalname: 'test.jpg',
+        mimetype: 'image/jpeg',
+      } as Express.Multer.File;
+
+      myS3ServiceMock.uploadToS3.mockResolvedValue({
+        status: false,
+        error: 'Upload failed',
+      });
+
+      await expect(
+        controller.updateOneOrgProject('org1', 'proj1', {}, mockFile),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('deleteOneOrgProject - should handle non-existent project gracefully', async () => {
+      myDatabaseServiceMock.projects.findUnique.mockResolvedValue(null);
+
+      const result = await controller.deleteOneOrgProject(
+        'org1',
+        'nonexistent',
+      );
+      expect(result).toEqual({ message: 'success' });
+      expect(myDatabaseServiceMock.projects.delete).not.toHaveBeenCalled();
     });
   });
 });
