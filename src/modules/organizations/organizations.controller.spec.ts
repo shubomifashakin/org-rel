@@ -3,7 +3,11 @@ import { ClsModule } from 'nestjs-cls';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { makeOrganizationCacheKey, makeUserCacheKey } from './common/utils.js';
+import {
+  makeOrganizationCacheKey,
+  makeProjectCacheKey,
+  makeUserCacheKey,
+} from './common/utils.js';
 import { OrganizationsController } from './organizations.controller.js';
 import { OrganizationsService } from './organizations.service.js';
 import { OrganizationsUserService } from './services/organizations-user.service.js';
@@ -89,6 +93,7 @@ const organizationName = 'test-organizations';
 const organizationId = 'test-org-id';
 
 const userId = 'test-user';
+const projectId = 'test-project';
 
 describe('OrganizationsController', () => {
   let controller: OrganizationsController;
@@ -684,6 +689,171 @@ describe('OrganizationsController', () => {
         makeUserCacheKey(organizationId, userId),
       );
     });
+
+    it('getAllOrgProjects - should return all organization projects with pagination', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const mockProjects = [...Array(11)].map((_, i) => ({
+        id: `proj${i + 1}`,
+        name: `Project ${i + 1}`,
+        image: null,
+        userId: 'user1',
+        organizationId: organizationId,
+      }));
+
+      myDatabaseServiceMock.projects.findMany.mockResolvedValue(mockProjects);
+
+      const result = await controller.getOrgProjects(organizationId);
+
+      expect(myDatabaseServiceMock.projects.findMany).toHaveBeenCalledWith({
+        where: { organizationId },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          userId: true,
+          organizationId: true,
+        },
+        take: 11,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(result).toEqual({
+        projects: mockProjects.slice(0, 10),
+        hasNextPage: true,
+        cursor: 'proj11',
+      });
+    });
+
+    it('createOrgProject - should create a new project without image', async () => {
+      const createDto = { name: 'New Project', userId };
+
+      const newProject = {
+        id: 'new-proj',
+        ...createDto,
+        organizationId,
+        image: null,
+      };
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue(
+        {},
+      );
+
+      myDatabaseServiceMock.projects.create.mockResolvedValue(newProject);
+
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      const result = await controller.createOrgProject(
+        organizationId,
+        createDto,
+      );
+
+      expect(
+        myDatabaseServiceMock.organizationsOnUsers.findUnique,
+      ).toHaveBeenCalled();
+
+      expect(myDatabaseServiceMock.projects.create).toHaveBeenCalledWith({
+        data: {
+          name: 'New Project',
+          userId,
+          organizationId,
+          image: undefined,
+        },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          userId: true,
+          organizationId: true,
+        },
+      });
+
+      expect(result).toEqual({ id: 'new-proj' });
+    });
+
+    it('getOneOrgProject - should return a project from cache', async () => {
+      const cachedProject = {
+        id: projectId,
+        name: 'Cached Project',
+        image: null,
+        userId: 'user1',
+        organizationId,
+      };
+
+      myRedisServiceMock.getFromCache.mockResolvedValue({
+        status: true,
+        data: cachedProject,
+      });
+
+      const result = await controller.getOneOrgProject(
+        organizationId,
+        projectId,
+      );
+
+      expect(myRedisServiceMock.getFromCache).toHaveBeenCalledWith(
+        makeProjectCacheKey(organizationId, projectId),
+      );
+
+      expect(result).toEqual(cachedProject);
+    });
+
+    it('updateOneOrgProject - should update project details', async () => {
+      const updateDto = { name: 'Updated Project' };
+      const updatedProject = {
+        id: projectId,
+        name: 'Updated Project',
+        image: null,
+        userId,
+        organizationId,
+      };
+
+      myDatabaseServiceMock.organizationsOnUsers.findUnique.mockResolvedValue(
+        {},
+      );
+
+      myDatabaseServiceMock.projects.update.mockResolvedValue(updatedProject);
+
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      const result = await controller.updateOneOrgProject(
+        organizationId,
+        projectId,
+        updateDto,
+      );
+
+      expect(myDatabaseServiceMock.projects.update).toHaveBeenCalledWith({
+        where: { id: projectId, organizationId: organizationId },
+        data: { name: 'Updated Project', image: undefined, userId: undefined },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          userId: true,
+          organizationId: true,
+        },
+      });
+      expect(result).toEqual({ message: 'success' });
+    });
+
+    it('deleteOneOrgProject - should delete a project', async () => {
+      myDatabaseServiceMock.projects.findUnique.mockResolvedValue({});
+      myDatabaseServiceMock.projects.delete(null);
+      myRedisServiceMock.deleteFromCache.mockResolvedValue({ status: true });
+
+      const result = await controller.deleteOneOrgProject(
+        organizationId,
+        projectId,
+      );
+
+      expect(myDatabaseServiceMock.projects.delete).toHaveBeenCalledWith({
+        where: { id: projectId, organizationId },
+      });
+
+      expect(myRedisServiceMock.deleteFromCache).toHaveBeenCalledWith(
+        makeProjectCacheKey(organizationId, projectId),
+      );
+
+      expect(result).toEqual({ message: 'success' });
+    });
   });
 
   describe('Unsuccesful Requests', () => {
@@ -961,7 +1131,7 @@ describe('OrganizationsController', () => {
       );
 
       await expect(
-        controller.createOrgProject('org1', createDto),
+        controller.createOrgProject(organizationId, createDto),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -970,7 +1140,7 @@ describe('OrganizationsController', () => {
       myDatabaseServiceMock.projects.findUnique.mockResolvedValue(null);
 
       await expect(
-        controller.getOneOrgProject('org1', 'nonexistent'),
+        controller.getOneOrgProject(organizationId, 'nonexistent'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -982,7 +1152,7 @@ describe('OrganizationsController', () => {
       );
 
       await expect(
-        controller.updateOneOrgProject('org1', 'proj1', updateDto),
+        controller.updateOneOrgProject(organizationId, projectId, updateDto),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -999,7 +1169,7 @@ describe('OrganizationsController', () => {
       });
 
       await expect(
-        controller.updateOneOrgProject('org1', 'proj1', {}, mockFile),
+        controller.updateOneOrgProject(organizationId, projectId, {}, mockFile),
       ).rejects.toThrow(InternalServerErrorException);
     });
 
@@ -1007,7 +1177,7 @@ describe('OrganizationsController', () => {
       myDatabaseServiceMock.projects.findUnique.mockResolvedValue(null);
 
       const result = await controller.deleteOneOrgProject(
-        'org1',
+        organizationId,
         'nonexistent',
       );
       expect(result).toEqual({ message: 'success' });
