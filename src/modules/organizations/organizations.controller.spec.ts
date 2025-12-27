@@ -2,6 +2,12 @@ import { Request } from 'express';
 import { ClsModule } from 'nestjs-cls';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import {
+  BadRequestException,
+  ForbiddenException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import {
   makeOrganizationCacheKey,
@@ -26,14 +32,10 @@ import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
 import { AppConfigService } from '../../core/app-config/app-config.service.js';
 import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
+import { MailerService } from '../../core/mailer/mailer.service.js';
 import { Readable } from 'node:stream';
 import { S3Service } from '../../core/s3/s3.service.js';
-import {
-  BadRequestException,
-  ForbiddenException,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+
 import { MINUTES_10 } from '../../common/utils/constants.js';
 
 const myConfigServiceMock = {
@@ -95,6 +97,10 @@ const myRedisServiceMock = {
   deleteFromCache: jest.fn(),
 };
 
+const myMailerMock = {
+  emails: { send: jest.fn() },
+};
+
 const myLoggerServiceMock = {
   logError: jest.fn(),
 };
@@ -108,6 +114,14 @@ const organizationId = 'test-org-id';
 
 const userId = 'test-user';
 const projectId = 'test-project';
+
+const fakeRequest = {
+  user: { id: userId, email: 'test@email.com' },
+  cookies: {
+    access_token: 'fake-token',
+    refresh_token: 'fake-token',
+  },
+} as unknown as Request;
 
 describe('OrganizationsController', () => {
   let controller: OrganizationsController;
@@ -157,6 +171,8 @@ describe('OrganizationsController', () => {
       .useValue(myLoggerServiceMock)
       .overrideProvider(S3Service)
       .useValue(myS3ServiceMock)
+      .overrideProvider(MailerService)
+      .useValue(myMailerMock)
       .compile();
 
     controller = module.get<OrganizationsController>(OrganizationsController);
@@ -183,13 +199,7 @@ describe('OrganizationsController', () => {
         {
           name: organizationName,
         },
-        {
-          user: { id: 'mock-user-id', email: 'test@email.com' },
-          cookies: {
-            access_token: 'fake-token',
-            refresh_token: 'fake-token',
-          },
-        } as unknown as Request,
+        fakeRequest,
       );
 
       expect(result).toBeDefined();
@@ -228,13 +238,7 @@ describe('OrganizationsController', () => {
         {
           name: organizationName,
         },
-        {
-          user: { id: 'mock-user-id', email: 'test@email.com' },
-          cookies: {
-            access_token: 'fake-token',
-            refresh_token: 'fake-token',
-          },
-        } as unknown as Request,
+        fakeRequest,
         {
           buffer: Buffer.from('hello'),
           fieldname: 'file',
@@ -256,7 +260,7 @@ describe('OrganizationsController', () => {
           image: imageUrl,
           users: {
             create: {
-              userId: 'mock-user-id',
+              userId: userId,
               role: 'ADMIN',
             },
           },
@@ -868,6 +872,109 @@ describe('OrganizationsController', () => {
 
       expect(result).toEqual({ message: 'success' });
     });
+
+    it('inviteOneUser - should send an invitation to a new user', async () => {
+      const mockInvite = {
+        id: 'invite-123',
+        role: 'USER',
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+      };
+
+      myDatabaseServiceMock.invites.findUnique.mockResolvedValue(null);
+
+      myDatabaseServiceMock.users.findUnique.mockResolvedValue({
+        fullname: 'Test User',
+        email: 'test@example.com',
+      });
+      myDatabaseServiceMock.organizations.findUnique.mockResolvedValue({
+        name: 'Test Org',
+      });
+      myDatabaseServiceMock.invites.create.mockResolvedValue(mockInvite);
+      myConfigServiceMock.MailerFrom = {
+        status: true,
+        data: 'noreply@example.com',
+      };
+      myMailerMock.emails.send.mockResolvedValue({ error: null });
+
+      const result = await controller.inviteOneUser(
+        fakeRequest,
+        organizationId,
+        { email: 'newuser@example.com', role: 'USER' },
+      );
+
+      expect(myDatabaseServiceMock.invites.findUnique).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.users.findUnique).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.organizations.findUnique).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.invites.create).toHaveBeenCalled();
+
+      expect(result).toEqual({ message: 'success' });
+    });
+
+    it('getAllInvites - should return all organization invites with pagination', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const mockInvites = [...Array(11)].map((_, i) => ({
+        id: `invite-${i}`,
+        email: `user${i}@example.com`,
+        role: 'USER',
+        status: 'PENDING',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+        inviterId: 'user-123',
+      }));
+
+      myDatabaseServiceMock.invites.findMany.mockResolvedValue(mockInvites);
+
+      const result = await controller.getAllInvites(organizationId);
+
+      expect(myDatabaseServiceMock.invites.findMany).toHaveBeenCalledWith({
+        where: { organizationId },
+        select: {
+          id: true,
+          email: true,
+          expiresAt: true,
+          createdAt: true,
+          updatedAt: true,
+          inviterId: true,
+          role: true,
+          status: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 11,
+      });
+
+      expect(result).toEqual({
+        invites: mockInvites.slice(0, 10),
+        hasNextPage: true,
+        cursor: 'invite-10',
+      });
+    });
+
+    it('deleteInvite - should delete an existing invite', async () => {
+      const inviteId = 'invite-123';
+      myDatabaseServiceMock.invites.findUnique.mockResolvedValue({
+        id: inviteId,
+      });
+
+      myDatabaseServiceMock.invites.delete.mockResolvedValue({ id: inviteId });
+
+      const result = await controller.deleteInvite(organizationId, inviteId);
+
+      expect(myDatabaseServiceMock.invites.delete).toHaveBeenCalledWith({
+        where: { id: inviteId, organizationId },
+      });
+      expect(result).toEqual({ message: 'success' });
+    });
+
+    it('deleteInvite - should handle non-existent invite gracefully', async () => {
+      const inviteId = 'non-existent';
+      myDatabaseServiceMock.invites.findUnique.mockResolvedValue(null);
+
+      const result = await controller.deleteInvite(organizationId, inviteId);
+
+      expect(myDatabaseServiceMock.invites.delete).not.toHaveBeenCalled();
+      expect(result).toEqual({ message: 'success' });
+    });
   });
 
   describe('Unsuccesful Requests', () => {
@@ -912,13 +1019,7 @@ describe('OrganizationsController', () => {
         {
           name: organizationName,
         },
-        {
-          user: { id: 'mock-user-id', email: 'test@email.com' },
-          cookies: {
-            access_token: 'fake-token',
-            refresh_token: 'fake-token',
-          },
-        } as unknown as Request,
+        fakeRequest,
       );
 
       expect(result).toBeDefined();
