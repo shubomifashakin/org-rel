@@ -275,7 +275,7 @@ export class OrganizationsService {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        message: 'Failed to delete organization info from cache',
+        message: `Failed to delete ${makeOrganizationCacheKey(id)} info from cache`,
       });
     }
 

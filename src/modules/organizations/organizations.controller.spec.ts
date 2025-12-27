@@ -47,6 +47,7 @@ const myDatabaseServiceMock = {
     create: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
   },
   organizationsOnUsers: {
     findMany: jest.fn(),
@@ -56,6 +57,7 @@ const myDatabaseServiceMock = {
 const myRedisServiceMock = {
   setInCache: jest.fn(),
   getFromCache: jest.fn(),
+  deleteFromCache: jest.fn(),
 };
 
 const myLoggerServiceMock = {
@@ -376,6 +378,80 @@ describe('OrganizationsController', () => {
         message: 'success',
       });
     });
+
+    it('deleteOneOrganization - should delete a single organization', async () => {
+      myRedisServiceMock.deleteFromCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizations.findUnique.mockResolvedValue({});
+      myDatabaseServiceMock.organizations.delete.mockResolvedValue(null);
+
+      const result = await controller.deleteOneOrganization(organizationId);
+
+      expect(
+        myDatabaseServiceMock.organizations.findUnique,
+      ).toHaveBeenCalledWith({ where: { id: organizationId } });
+
+      expect(myDatabaseServiceMock.organizations.delete).toHaveBeenCalledWith({
+        where: { id: organizationId },
+      });
+
+      expect(myRedisServiceMock.deleteFromCache).toHaveBeenCalledWith(
+        makeOrganizationCacheKey(organizationId),
+      );
+
+      expect(result).toEqual({
+        message: 'success',
+      });
+    });
+
+    it('deleteOneOrganization - should delete from database because organization did not exist', async () => {
+      myDatabaseServiceMock.organizations.findUnique.mockResolvedValue(null);
+
+      const result = await controller.deleteOneOrganization(organizationId);
+
+      expect(
+        myDatabaseServiceMock.organizations.findUnique,
+      ).toHaveBeenCalledWith({ where: { id: organizationId } });
+
+      expect(myDatabaseServiceMock.organizations.delete).not.toHaveBeenCalled();
+
+      expect(result).toEqual({
+        message: 'success',
+      });
+    });
+
+    it('deleteOneOrganization - should delete a single organization but fail to delete from cache', async () => {
+      myRedisServiceMock.deleteFromCache.mockResolvedValue({
+        status: false,
+        error: 'Failed to delete',
+      });
+
+      myDatabaseServiceMock.organizations.findUnique.mockResolvedValue({});
+      myDatabaseServiceMock.organizations.delete.mockResolvedValue(null);
+
+      const result = await controller.deleteOneOrganization(organizationId);
+
+      expect(
+        myDatabaseServiceMock.organizations.findUnique,
+      ).toHaveBeenCalledWith({ where: { id: organizationId } });
+
+      expect(myDatabaseServiceMock.organizations.delete).toHaveBeenCalledWith({
+        where: { id: organizationId },
+      });
+
+      expect(myRedisServiceMock.deleteFromCache).toHaveBeenCalledWith(
+        makeOrganizationCacheKey(organizationId),
+      );
+
+      expect(myLoggerServiceMock.logError).toHaveBeenCalledWith({
+        reason: 'Failed to delete',
+        message: `Failed to delete ${makeOrganizationCacheKey(organizationId)} info from cache`,
+      });
+
+      expect(result).toEqual({
+        message: 'success',
+      });
+    });
   });
 
   describe('Unsuccesful Requests', () => {
@@ -492,6 +568,27 @@ describe('OrganizationsController', () => {
       ).rejects.toThrow(Error);
 
       expect(myRedisServiceMock.setInCache).not.toHaveBeenCalled();
+    });
+
+    it('deleteOneOrganization - should not delete a single organization because database failed', async () => {
+      myRedisServiceMock.deleteFromCache.mockResolvedValue({ status: true });
+
+      myDatabaseServiceMock.organizations.findUnique.mockResolvedValue({});
+      myDatabaseServiceMock.organizations.delete.mockRejectedValue(new Error());
+
+      await expect(
+        controller.deleteOneOrganization(organizationId),
+      ).rejects.toThrow(Error);
+
+      expect(
+        myDatabaseServiceMock.organizations.findUnique,
+      ).toHaveBeenCalledWith({ where: { id: organizationId } });
+
+      expect(myDatabaseServiceMock.organizations.delete).toHaveBeenCalledWith({
+        where: { id: organizationId },
+      });
+
+      expect(myRedisServiceMock.deleteFromCache).not.toHaveBeenCalled();
     });
   });
 });
