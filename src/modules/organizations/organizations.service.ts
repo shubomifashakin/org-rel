@@ -2,7 +2,6 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
 
@@ -52,10 +51,6 @@ export class OrganizationsService {
     userId: string,
     image?: Express.Multer.File,
   ) {
-    if (!userId) {
-      throw new UnauthorizedException('Unauthorized');
-    }
-
     let s3Url: string | undefined = undefined;
 
     if (image) {
