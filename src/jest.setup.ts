@@ -1,7 +1,7 @@
 jest.mock('./../generated/prisma/client.js', () => {
   return {
     PrismaClient: jest.fn().mockImplementation(() => ({
-      $connects: jest.fn(),
+      $connect: jest.fn(),
     })),
   };
 });
