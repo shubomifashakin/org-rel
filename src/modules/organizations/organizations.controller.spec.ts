@@ -22,6 +22,8 @@ import { AppLoggerService } from '../../core/app-logger/app-logger.service.js';
 import { AppConfigService } from '../../core/app-config/app-config.service.js';
 import { JwtServiceModule } from '../../core/jwt-service/jwt-service.module.js';
 import { SecretsManagerModule } from '../../core/secrets-manager/secrets-manager.module.js';
+import { Readable } from 'node:stream';
+import { S3Service } from '../../core/s3/s3.service.js';
 
 const myConfigServiceMock = {
   S3BucketName: { status: true, data: 'eu-west-1' },
@@ -52,6 +54,12 @@ const myRedisServiceMock = {
 const myLoggerServiceMock = {
   logError: jest.fn(),
 };
+
+const myS3ServiceMock = {
+  uploadToS3: jest.fn(),
+};
+
+const organizationName = 'test-organizations';
 
 describe('OrganizationsController', () => {
   let controller: OrganizationsController;
@@ -99,6 +107,8 @@ describe('OrganizationsController', () => {
       .useValue(myRedisServiceMock)
       .overrideProvider(AppLoggerService)
       .useValue(myLoggerServiceMock)
+      .overrideProvider(S3Service)
+      .useValue(myS3ServiceMock)
       .compile();
 
     controller = module.get<OrganizationsController>(OrganizationsController);
@@ -113,7 +123,7 @@ describe('OrganizationsController', () => {
     it('should create organization', async () => {
       const createdAt = new Date();
       myDatabaseServiceMock.organizations.create.mockResolvedValue({
-        name: 'test-organizations',
+        name: organizationName,
         id: 'test-org-id',
         createdAt,
         image: null,
@@ -123,7 +133,7 @@ describe('OrganizationsController', () => {
 
       const result = await controller.createOrganization(
         {
-          name: 'test-organizations',
+          name: organizationName,
         },
         {
           user: { id: 'mock-user-id', email: 'test@email.com' },
@@ -140,8 +150,84 @@ describe('OrganizationsController', () => {
         makeOrganizationCacheKey('test-org-id'),
         expect.objectContaining({
           id: 'test-org-id',
-          name: 'test-organizations',
+          name: organizationName,
           image: null,
+          createdAt,
+        }),
+      );
+    });
+
+    it('should create organization with an image', async () => {
+      const imageUrl = 'https://test-bucket.s3.amazonaws.com/test-key';
+
+      const createdAt = new Date();
+      myDatabaseServiceMock.organizations.create.mockResolvedValue({
+        name: organizationName,
+        id: 'test-org-id',
+        createdAt,
+        image: imageUrl,
+      });
+
+      myRedisServiceMock.setInCache.mockResolvedValue({ status: true });
+
+      myS3ServiceMock.uploadToS3.mockResolvedValue({
+        status: true,
+        data: imageUrl,
+        error: null,
+      });
+
+      const result = await controller.createOrganization(
+        {
+          name: organizationName,
+        },
+        {
+          user: { id: 'mock-user-id', email: 'test@email.com' },
+          cookies: {
+            access_token: 'fake-token',
+            refresh_token: 'fake-token',
+          },
+        } as unknown as Request,
+        {
+          buffer: Buffer.from('hello'),
+          fieldname: 'file',
+          mimetype: 'image/jpeg',
+          size: 1024,
+          originalname: 'test-image.jpg',
+          encoding: '7bit',
+          filename: 'test-image-12345.jpg',
+          path: '/tmp/test-image-12345.jpg',
+          stream: new Readable(),
+          destination: '',
+        },
+      );
+
+      expect(myS3ServiceMock.uploadToS3).toHaveBeenCalled();
+      expect(myDatabaseServiceMock.organizations.create).toHaveBeenCalledWith({
+        data: {
+          name: organizationName,
+          image: imageUrl,
+          users: {
+            create: {
+              userId: 'mock-user-id',
+              role: 'ADMIN',
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          createdAt: true,
+        },
+      });
+      expect(result).toBeDefined();
+      expect(result.id).toBe('test-org-id');
+      expect(myRedisServiceMock.setInCache).toHaveBeenCalledWith(
+        makeOrganizationCacheKey('test-org-id'),
+        expect.objectContaining({
+          id: 'test-org-id',
+          name: organizationName,
+          image: imageUrl,
           createdAt,
         }),
       );
@@ -157,7 +243,7 @@ describe('OrganizationsController', () => {
       await expect(
         controller.createOrganization(
           {
-            name: 'test-organizations',
+            name: organizationName,
           },
           {
             user: { id: 'mock-user-id', email: 'test@email.com' },
@@ -175,7 +261,7 @@ describe('OrganizationsController', () => {
     it('should log the error when redis fails', async () => {
       const createdAt = new Date();
       myDatabaseServiceMock.organizations.create.mockResolvedValue({
-        name: 'test-organizations',
+        name: organizationName,
         id: 'test-org-id',
         createdAt,
         image: null,
@@ -188,7 +274,7 @@ describe('OrganizationsController', () => {
 
       const result = await controller.createOrganization(
         {
-          name: 'test-organizations',
+          name: organizationName,
         },
         {
           user: { id: 'mock-user-id', email: 'test@email.com' },
@@ -205,7 +291,7 @@ describe('OrganizationsController', () => {
         makeOrganizationCacheKey('test-org-id'),
         expect.objectContaining({
           id: 'test-org-id',
-          name: 'test-organizations',
+          name: organizationName,
           image: null,
           createdAt,
         }),
