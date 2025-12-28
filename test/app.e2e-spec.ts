@@ -11,9 +11,7 @@ import { DatabaseService } from './../src/core/database/database.service.js';
 
 const myLoggerMock = {
   log: jest.fn(),
-  error: jest.fn().mockImplementation((data) => {
-    console.log(data);
-  }),
+  error: jest.fn(),
   warn: jest.fn(),
   debug: jest.fn(),
   logError: jest.fn(),
