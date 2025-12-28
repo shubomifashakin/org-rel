@@ -37,7 +37,10 @@ import { HasherModule } from './core/hasher/hasher.module.js';
     AppConfigModule,
     AppLoggerModule,
     HasherModule,
-    ConfigModule.forRoot({ isGlobal: false }),
+    ConfigModule.forRoot({
+      isGlobal: false,
+      envFilePath: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
+    }),
     ClsModule.forRoot({
       global: true,
       middleware: {
