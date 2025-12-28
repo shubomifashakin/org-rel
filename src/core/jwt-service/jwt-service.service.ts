@@ -62,6 +62,14 @@ export class JwtServiceService {
 
       return { status: true, data: jwt, error: null };
     } catch (error) {
+      if (error instanceof DOMException) {
+        return {
+          status: false,
+          data: null,
+          error: `${error.name}: ${error.message}`,
+        };
+      }
+
       if (error instanceof Error) {
         return {
           status: false,
