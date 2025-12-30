@@ -73,6 +73,10 @@ describe('AppController (e2e)', () => {
     await databaseService.organizations.deleteMany();
   });
 
+  afterEach(async () => {
+    await app.close();
+  });
+
   it('/health (GET)', () => {
     return request(app.getHttpServer())
       .get('/health')
