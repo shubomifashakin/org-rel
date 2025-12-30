@@ -203,6 +203,20 @@ describe('AppController (e2e)', () => {
       projectId = req.body.id;
     });
 
+    it('should not create a project in the organization due to invalid name', async () => {
+      const req = await request(app.getHttpServer())
+        .post(`/api/v1/organizations/${organizationId}/projects`)
+        .set('Cookie', cookies)
+        .send({
+          name: 'Te',
+          userId: userId,
+        });
+
+      expect(req.statusCode).toBe(400);
+
+      expect(req.type).toBe('application/json');
+    });
+
     it('should get all the projects in the organization', async () => {
       const req = await request(app.getHttpServer())
         .get(`/api/v1/organizations/${organizationId}/projects`)
@@ -272,6 +286,34 @@ describe('AppController (e2e)', () => {
       expect(req.body).toEqual({
         message: 'success',
       });
+
+      expect(req.type).toBe('application/json');
+    });
+
+    it('should not invite a user due to invalid role', async () => {
+      const req = await request(app.getHttpServer())
+        .post(`/api/v1/organizations/${organizationId}/invites`)
+        .set('Cookie', cookies)
+        .send({
+          email: invitedUsersMail,
+          role: 'MEMBER',
+        });
+
+      expect(req.statusCode).toBe(400);
+
+      expect(req.type).toBe('application/json');
+    });
+
+    it('should not invite a user due to invalid email', async () => {
+      const req = await request(app.getHttpServer())
+        .post(`/api/v1/organizations/${organizationId}/invites`)
+        .set('Cookie', cookies)
+        .send({
+          email: 'invalid-email',
+          role: 'USER',
+        });
+
+      expect(req.statusCode).toBe(400);
 
       expect(req.type).toBe('application/json');
     });
@@ -511,6 +553,16 @@ describe('AppController (e2e)', () => {
     it('should not allow unauthorized access to endpoint ', async () => {
       const req = await request(app.getHttpServer())
         .get('/api/v1/organizations')
+        .set('Cookie', cookies);
+
+      expect(req.statusCode).toBe(401);
+
+      expect(req.type).toBe('application/json');
+    });
+
+    it('should not allow unauthorized access to refresh token endpoint', async () => {
+      const req = await request(app.getHttpServer())
+        .get('/api/v1/auth/refresh')
         .set('Cookie', cookies);
 
       expect(req.statusCode).toBe(401);
