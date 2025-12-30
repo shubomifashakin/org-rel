@@ -81,7 +81,7 @@ import { HasherModule } from './core/hasher/hasher.module.js';
           throttlers: [
             {
               ttl: 10,
-              limit: 5,
+              limit: 10,
               name: 'default',
             },
           ],

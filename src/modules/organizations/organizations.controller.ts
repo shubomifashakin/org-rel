@@ -166,6 +166,7 @@ export class OrganizationsController {
   }
 
   // INVITES
+  @HttpCode(200)
   @Post(':organizationId/invites') //send an invite to a user
   @UseGuards(IsMemberGuard, RolesGuard)
   @NeedsRoles('ADMIN')
@@ -221,6 +222,7 @@ export class OrganizationsController {
     );
   }
 
+  @HttpCode(200)
   @Throttle({ default: { limit: 5, ttl: 10 } })
   @Post(':organizationId/projects') //create a project in an org
   @UseGuards(IsMemberGuard, RolesGuard)

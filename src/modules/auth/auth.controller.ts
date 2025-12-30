@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Ip,
   Post,
   Req,
@@ -25,6 +26,7 @@ import { GetImage } from '../../common/decorators/get-image.decorator.js';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @HttpCode(200)
   @Throttle({ default: { limit: 5, ttl: 15 } })
   @Post('sign-up')
   @GetImage()
@@ -59,6 +61,7 @@ export class AuthController {
     return { message: 'success' };
   }
 
+  @HttpCode(200)
   @UseGuards(UserAuthGuard)
   @Post('sign-out')
   async signOut(
@@ -78,6 +81,7 @@ export class AuthController {
     return { message: 'success' };
   }
 
+  @HttpCode(200)
   @Throttle({ default: { limit: 5, ttl: 15 } })
   @Post('sign-in')
   async signIn(
