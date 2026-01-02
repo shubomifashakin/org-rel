@@ -12,8 +12,7 @@ export class LoggerMiddleware implements NestMiddleware {
     res.on('finish', () => {
       const duration = Date.now() - startTime;
 
-      this.loggerService.log({
-        message: 'Request',
+      this.loggerService.log('Request', {
         method: req.method,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         url: req.route?.path || req.path,
@@ -21,7 +20,6 @@ export class LoggerMiddleware implements NestMiddleware {
         duration: `${duration}ms`,
         userAgent: req.headers['user-agent'],
         ipAddr: req.ip,
-        query: Object.keys(req.query).length ? req.query : undefined,
       });
     });
 

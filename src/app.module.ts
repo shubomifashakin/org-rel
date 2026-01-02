@@ -56,20 +56,7 @@ import { HasherModule } from './core/hasher/hasher.module.js';
         setup(clx, req: Request) {
           clx.set('ip', req?.ip || req.ips?.[0] || 'unknown');
           clx.set('userAgent', req.get('user-agent'));
-        },
-      },
-      guard: {
-        mount: true,
-        setup(clx, ctx) {
-          if (ctx.getType() === 'http') {
-            const req = ctx.switchToHttp().getRequest<Request>();
-
-            clx.set('method', req.method);
-            clx.set(
-              'handler',
-              `${ctx.getClass().name}.${ctx.getHandler().name}`,
-            );
-          }
+          clx.set('method', req.method);
         },
       },
     }),

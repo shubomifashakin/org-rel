@@ -26,6 +26,12 @@ export class UserAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
+
+    this.cls.set(
+      'handler',
+      `${context.getClass().name}.${context.getHandler().name}`,
+    );
+
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const accessToken = request.cookies?.[TOKEN.ACCESS.TYPE] as
       | string
