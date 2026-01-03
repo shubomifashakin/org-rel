@@ -49,6 +49,7 @@ export class AccountsService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to get account info from cache',
+          context: `${AccountsService.name}.getMyAccountInfo`,
         });
       }
 
@@ -79,6 +80,7 @@ export class AccountsService {
         this.loggerService.logError({
           reason: storeInCache.error,
           message: 'Failed to store account info in cache',
+          context: `${AccountsService.name}.getMyAccountInfo`,
         });
       }
 
@@ -92,11 +94,13 @@ export class AccountsService {
         this.loggerService.logError({
           reason: error.message,
           message: 'Failed to get account info',
+          context: `${AccountsService.name}.getMyAccountInfo`,
         });
       } else {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to get account info',
+          context: `${AccountsService.name}.getMyAccountInfo`,
         });
       }
 
@@ -130,6 +134,7 @@ export class AccountsService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to delete account info from cache',
+          context: `${AccountsService.name}.deleteMyAccount`,
         });
       }
 
@@ -139,11 +144,13 @@ export class AccountsService {
         this.loggerService.logError({
           reason: `${error.name}: ${error.message}`,
           message: 'Failed to get all invites',
+          context: `${AccountsService.name}.deleteMyAccount`,
         });
       } else {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to get all invites',
+          context: `${AccountsService.name}.deleteMyAccount`,
         });
       }
 
@@ -166,6 +173,7 @@ export class AccountsService {
           this.loggerService.logError({
             reason: bucketName.error,
             message: 'Failed to get s3 bucket name',
+            context: `${AccountsService.name}.updateMyAccount`,
           });
 
           throw new InternalServerErrorException('Internal Server Error');
@@ -179,8 +187,8 @@ export class AccountsService {
         if (!status) {
           this.loggerService.logError({
             reason: error,
-
             message: 'Failed to upload updated image to s3',
+            context: `${AccountsService.name}.updateMyAccount`,
           });
 
           throw new InternalServerErrorException('Internal Server Error');
@@ -218,6 +226,7 @@ export class AccountsService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to store account info in cache',
+          context: 'AccountsService.updateMyAccount',
         });
       }
 
@@ -226,6 +235,7 @@ export class AccountsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to update account info',
+        context: 'AccountsService.updateMyAccount',
       });
 
       if (error instanceof PrismaClientKnownRequestError) {
@@ -292,11 +302,13 @@ export class AccountsService {
         this.loggerService.logError({
           reason: `${error.name}: ${error.message}`,
           message: 'Failed to get all invites',
+          context: `${AccountsService.name}.getAllInvites`,
         });
       } else {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to get all invites',
+          context: `${AccountsService.name}.getAllInvites`,
         });
       }
 

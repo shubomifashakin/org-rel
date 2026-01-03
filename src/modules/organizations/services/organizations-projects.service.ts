@@ -89,6 +89,7 @@ export class OrganizationsProjectsService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to upload image to S3',
+          context: `${OrganizationsProjectsService.name}.createOrgProject`,
         });
       }
 
@@ -137,6 +138,7 @@ export class OrganizationsProjectsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to store project in cache',
+        context: `${OrganizationsProjectsService.name}.createOrgProject`,
       });
     }
 
@@ -156,6 +158,7 @@ export class OrganizationsProjectsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to get project from cache',
+        context: `${OrganizationsProjectsService.name}.getOneOrgProject`,
       });
     }
 
@@ -187,6 +190,7 @@ export class OrganizationsProjectsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to store project in cache',
+        context: `${OrganizationsProjectsService.name}.getOneOrgProject`,
       });
     }
 
@@ -226,6 +230,7 @@ export class OrganizationsProjectsService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to upload image to S3',
+          context: `${OrganizationsProjectsService.name}.updateOneOrgProject`,
         });
 
         throw new InternalServerErrorException('Internal Server Error');
@@ -262,6 +267,7 @@ export class OrganizationsProjectsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to store project in cache',
+        context: `${OrganizationsProjectsService.name}.updateOneOrgProject`,
       });
     }
 
@@ -295,6 +301,7 @@ export class OrganizationsProjectsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to delete project from cache',
+        context: `${OrganizationsProjectsService.name}.deleteOneOrgProject`,
       });
     }
 

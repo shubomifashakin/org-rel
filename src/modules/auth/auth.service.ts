@@ -73,6 +73,7 @@ export class AuthService {
       this.loggerService.logError({
         reason: accessToken?.error || refreshToken?.error,
         message: 'Failed to generate access or refresh token',
+        context: `${AuthService.name}.generateJwts`,
       });
 
       throw new InternalServerErrorException('Internal Server Error');
@@ -109,6 +110,7 @@ export class AuthService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to hash refresh token',
+        context: `${AuthService.name}.handleAuthenticate`,
       });
 
       throw new InternalServerErrorException('Internal Server Error');
@@ -144,6 +146,7 @@ export class AuthService {
           this.loggerService.logError({
             reason: bucketName.error,
             message: 'Failed to get S3 bucket name',
+            context: `${AuthService.name}.signUp`,
           });
 
           throw new InternalServerErrorException('Internal Server Error');
@@ -158,6 +161,7 @@ export class AuthService {
           this.loggerService.logError({
             reason: error,
             message: 'Failed to upload file',
+            context: `${AuthService.name}.signUp`,
           });
 
           throw new InternalServerErrorException('Internal Server Error');
@@ -174,6 +178,7 @@ export class AuthService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to hash password',
+          context: `${AuthService.name}.signUp`,
         });
 
         throw new InternalServerErrorException('Internal Server Error');
@@ -216,6 +221,7 @@ export class AuthService {
       this.loggerService.logError({
         reason: attempts.error,
         message: 'Failed to get login attempts',
+        context: `${AuthService.name}.signIn`,
       });
     }
 
@@ -253,6 +259,7 @@ export class AuthService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to compare hashed password',
+        context: `${AuthService.name}.signIn`,
       });
 
       throw new InternalServerErrorException('Internal Server Error');
@@ -269,6 +276,7 @@ export class AuthService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to set login attempts',
+          context: `${AuthService.name}.signIn`,
         });
       }
 
@@ -283,6 +291,7 @@ export class AuthService {
           this.loggerService.logError({
             reason: mailerFrom.error,
             message: 'Failed to get mailerFrom',
+            context: `${AuthService.name}.signIn`,
           });
         }
 
@@ -298,6 +307,7 @@ export class AuthService {
             this.loggerService.logError({
               reason: error,
               message: 'Failed to send suspicious login mail',
+              context: `${AuthService.name}.signIn`,
             });
           }
         }
@@ -318,6 +328,7 @@ export class AuthService {
       this.loggerService.logError({
         reason: deleteFromCache.error,
         message: 'Failed to delete login attempts from cache',
+        context: `${AuthService.name}.signIn`,
       });
     }
 
@@ -332,6 +343,7 @@ export class AuthService {
         this.loggerService.logError({
           reason: accessKeyReq.error,
           message: 'Failed to verify access token',
+          context: `${AuthService.name}.signOut`,
         });
 
         throw new InternalServerErrorException();
@@ -351,6 +363,7 @@ export class AuthService {
           this.loggerService.logError({
             reason: error,
             message: 'Failed to blacklist access token',
+            context: `${AuthService.name}.signOut`,
           });
         }
       }
@@ -362,6 +375,7 @@ export class AuthService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to verify refresh token',
+          context: `${AuthService.name}.signOut`,
         });
 
         throw new InternalServerErrorException('Internal Server Error');
@@ -398,11 +412,13 @@ export class AuthService {
         this.loggerService.logError({
           message: 'Failed to sign out user',
           reason: `${error.name}: ${error.message}`,
+          context: `${AuthService.name}.signOut`,
         });
       } else {
         this.loggerService.logError({
           message: 'Failed to sign out user',
           reason: error,
+          context: `${AuthService.name}.signOut`,
         });
       }
 
@@ -422,6 +438,7 @@ export class AuthService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to verify refresh token',
+        context: `${AuthService.name}.refresh`,
       });
 
       throw new InternalServerErrorException('Internal Server Error');

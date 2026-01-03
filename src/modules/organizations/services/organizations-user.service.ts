@@ -81,6 +81,7 @@ export class OrganizationsUserService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to get organization user from cache',
+        context: `${OrganizationsUserService.name}.getOneOrgUser`,
       });
     }
 
@@ -131,6 +132,7 @@ export class OrganizationsUserService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to store organization user in cache',
+        context: `${OrganizationsUserService.name}.getOneOrgUser`,
       });
     }
 
@@ -224,6 +226,7 @@ export class OrganizationsUserService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to store organization user in cache',
+          context: `${OrganizationsUserService.name}.updateOneOrgUsersRole`,
         });
       }
 
@@ -296,6 +299,7 @@ export class OrganizationsUserService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to delete organization user from cache',
+        context: `${OrganizationsUserService.name}.deleteOneOrgUser`,
       });
     }
 

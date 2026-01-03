@@ -98,9 +98,18 @@ export class AppLoggerService
     this.logger.verbose(message, ...optionalParams);
   }
 
-  logError({ message, reason }: { message: string; reason: unknown }) {
+  logError({
+    message,
+    reason,
+    context,
+  }: {
+    message: string;
+    reason: unknown;
+    context: string;
+  }) {
     this.logger.error(message, {
       reason,
+      context,
       requestId: this.cls.getId(),
       ...this.cls.get(),
     });

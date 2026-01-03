@@ -60,6 +60,7 @@ export class OrganizationsService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to upload image to S3',
+          context: `${OrganizationsService.name}.createOrganization`,
         });
       }
 
@@ -96,6 +97,7 @@ export class OrganizationsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to store organization info in cache',
+        context: `${OrganizationsService.name}.createOrganization`,
       });
     }
 
@@ -166,6 +168,7 @@ export class OrganizationsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to get organization info from cache',
+        context: `${OrganizationsService.name}.getOneOrganization`,
       });
     }
 
@@ -198,6 +201,7 @@ export class OrganizationsService {
       this.loggerService.logError({
         reason: storeInCache.error,
         message: 'Failed to store organization info in cache',
+        context: `${OrganizationsService.name}.getOneOrganization`,
       });
     }
 
@@ -218,6 +222,7 @@ export class OrganizationsService {
         this.loggerService.logError({
           reason: error,
           message: 'Failed to upload image to S3',
+          context: `${OrganizationsService.name}.updateOneOrganization`,
         });
 
         throw new InternalServerErrorException('Internal Server Error');
@@ -249,6 +254,7 @@ export class OrganizationsService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to store organization info in cache',
+        context: `${OrganizationsService.name}.updateOneOrganization`,
       });
     }
 
@@ -276,6 +282,7 @@ export class OrganizationsService {
       this.loggerService.logError({
         reason: error,
         message: `Failed to delete ${makeOrganizationCacheKey(id)} info from cache`,
+        context: `${OrganizationsService.name}.deleteOneOrganization`,
       });
     }
 

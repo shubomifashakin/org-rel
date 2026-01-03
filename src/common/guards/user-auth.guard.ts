@@ -27,11 +27,6 @@ export class UserAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    this.cls.set(
-      'handler',
-      `${context.getClass().name}.${context.getHandler().name}`,
-    );
-
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const accessToken = request.cookies?.[TOKEN.ACCESS.TYPE] as
       | string
@@ -47,7 +42,8 @@ export class UserAuthGuard implements CanActivate {
       if (!status) {
         this.loggerService.logError({
           reason: error,
-          message: 'UserGuard: Failed to verify access token',
+          message: 'Failed to verify access token',
+          context: `${UserAuthGuard.name}.canActivate.${context.getClass().name}.${context.getHandler().name}`,
         });
 
         throw new InternalServerErrorException('Unauthorized');
@@ -66,7 +62,8 @@ export class UserAuthGuard implements CanActivate {
       if (!blacklisted.status) {
         this.loggerService.logError({
           reason: blacklisted.error,
-          message: 'UserGuard: Failed to get blacklisted status',
+          message: 'Failed to get blacklisted status',
+          context: `${UserAuthGuard.name}.canActivate.${context.getClass().name}.${context.getHandler().name}`,
         });
       }
 
@@ -84,7 +81,8 @@ export class UserAuthGuard implements CanActivate {
 
       this.loggerService.logError({
         reason: error,
-        message: 'UserGuard: Failed to verify access token',
+        message: 'Failed to verify access token',
+        context: `${UserAuthGuard.name}.canActivate.${context.getClass().name}.${context.getHandler().name}`,
       });
 
       throw new InternalServerErrorException('Internal Server Error');

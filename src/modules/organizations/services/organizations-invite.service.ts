@@ -92,6 +92,7 @@ export class OrganizationsInviteService {
       this.loggerService.logError({
         reason: mailerFrom.error,
         message: 'Failed to get MailerFrom',
+        context: `${OrganizationsInviteService.name}.inviteOneUser`,
       });
 
       throw new InternalServerErrorException('Internal Server Error');
@@ -114,6 +115,7 @@ export class OrganizationsInviteService {
       this.loggerService.logError({
         reason: error,
         message: 'Failed to send invite mail',
+        context: `${OrganizationsInviteService.name}.inviteOneUser`,
       });
     }
 

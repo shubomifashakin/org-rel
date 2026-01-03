@@ -71,7 +71,8 @@ export class RolesGuard implements CanActivate {
     if (!cachedUserRole.status) {
       this.loggerService.logError({
         reason: cachedUserRole.error,
-        message: 'RoleGuard: Failed to get organization user info from cache',
+        message: 'Failed to get organization user info from cache',
+        context: `${RolesGuard.name}.canActivate.${context.getClass().name}.${context.getHandler().name}`,
       });
     }
 
@@ -119,7 +120,8 @@ export class RolesGuard implements CanActivate {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        message: 'RoleGuard: Failed to store organization user info in cache',
+        message: 'Failed to store organization user info in cache',
+        context: `${RolesGuard.name}.canActivate.${context.getClass().name}.${context.getHandler().name}`,
       });
     }
 

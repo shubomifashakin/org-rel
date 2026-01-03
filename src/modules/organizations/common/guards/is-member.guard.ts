@@ -35,8 +35,8 @@ export class IsMemberGuard implements CanActivate {
     if (!status) {
       this.loggerService.logError({
         reason: error,
-        message:
-          'IsMemberGuard: Failed to get organization user info from cache',
+        message: 'Failed to get organization user info from cache',
+        context: `${IsMemberGuard.name}.canActivate.${context.getClass().name}.${context.getHandler().name}`,
       });
     }
 
@@ -86,8 +86,8 @@ export class IsMemberGuard implements CanActivate {
     if (!setInCacheStatus) {
       this.loggerService.logError({
         reason: setInCacheError,
-        message:
-          'IsMemberGuard: Failed to store organization user info in cache',
+        message: 'Failed to store organization user info in cache',
+        context: `${IsMemberGuard.name}.canActivate.${context.getClass().name}.${context.getHandler().name}`,
       });
     }
 
