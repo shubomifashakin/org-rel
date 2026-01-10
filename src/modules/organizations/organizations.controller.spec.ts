@@ -488,6 +488,7 @@ describe('OrganizationsController', () => {
       expect(myLoggerServiceMock.logError).toHaveBeenCalledWith({
         reason: 'Failed to delete',
         message: `Failed to delete ${makeOrganizationCacheKey(organizationId)} info from cache`,
+        context: expect.any(String),
       });
 
       expect(result).toEqual({
@@ -1037,6 +1038,7 @@ describe('OrganizationsController', () => {
       expect(myLoggerServiceMock.logError).toHaveBeenCalledWith({
         reason: 'Failed to store in cache',
         message: 'Failed to store organization info in cache',
+        context: expect.any(String),
       });
     });
 
@@ -1110,6 +1112,7 @@ describe('OrganizationsController', () => {
       expect(myLoggerServiceMock.logError).toHaveBeenCalledWith({
         reason: error,
         message: 'Failed to upload image to S3',
+        context: expect.any(String),
       });
     });
 

@@ -39,7 +39,7 @@ describe('AppController (e2e)', () => {
   let invitersName: string;
   let inviteId: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -71,9 +71,7 @@ describe('AppController (e2e)', () => {
     await databaseService.projects.deleteMany();
     await databaseService.organizationsOnUsers.deleteMany();
     await databaseService.organizations.deleteMany();
-  });
 
-  afterEach(async () => {
     await app.close();
   });
 
